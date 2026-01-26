@@ -8,7 +8,12 @@
  * - Color-matched palettes for each theme
  * - Phrase cycling during loading states
  *
- * @version 1.0.0
+ * @version 2.0.0
+ *
+ * v2.0.0 - Added:
+ *   - 100+ funny brain/memory/neural phrases
+ *   - Claude-like color pulsation (breathing effect)
+ *   - Phrase shuffling for variety each session
  */
 
 'use strict';
@@ -24,6 +29,7 @@ const COLORS = {
   // Styles
   bold: '\x1b[1m',
   dim: '\x1b[2m',
+  normal: '\x1b[22m', // Remove bold/dim
 
   // Foreground colors
   black: '\x1b[30m',
@@ -35,6 +41,15 @@ const COLORS = {
   cyan: '\x1b[36m',
   white: '\x1b[37m',
   gray: '\x1b[90m',
+
+  // Bright foreground colors
+  brightBlack: '\x1b[90m',
+  brightRed: '\x1b[91m',
+  brightGreen: '\x1b[92m',
+  brightYellow: '\x1b[93m',
+  brightBlue: '\x1b[94m',
+  brightMagenta: '\x1b[95m',
+  brightCyan: '\x1b[96m',
   brightWhite: '\x1b[97m',
 
   // Background colors
@@ -42,6 +57,38 @@ const COLORS = {
   bgBlue: '\x1b[44m',
   bgCyan: '\x1b[46m',
 };
+
+// =============================================================================
+// COLOR PULSATION SYSTEM (Claude-like breathing effect)
+// =============================================================================
+
+/**
+ * Creates pulsating color effect by cycling through brightness levels
+ * States: dim → normal → bright → normal → (repeat)
+ */
+const PULSE_STATES = ['dim', 'normal', 'bright', 'normal'];
+
+/**
+ * Get color with pulsation applied
+ * @param {string} baseColor - Base color name (e.g., 'cyan')
+ * @param {number} pulseIndex - Current pulse frame (0-3)
+ * @returns {string} ANSI escape sequence with pulsation
+ */
+function getPulsedColor(baseColor, pulseIndex) {
+  const state = PULSE_STATES[pulseIndex % PULSE_STATES.length];
+  const colorCode = COLORS[baseColor] || COLORS.cyan;
+
+  switch (state) {
+    case 'dim':
+      return COLORS.dim + colorCode;
+    case 'bright':
+      // Use bright variant if available, otherwise bold
+      const brightKey = 'bright' + baseColor.charAt(0).toUpperCase() + baseColor.slice(1);
+      return COLORS[brightKey] || (COLORS.bold + colorCode);
+    default:
+      return colorCode;
+  }
+}
 
 // Helper to colorize text
 const c = (color, text) => `${COLORS[color]}${text}${COLORS.reset}`;
@@ -51,6 +98,7 @@ const c = (color, text) => `${COLORS[color]}${text}${COLORS.reset}`;
 // =============================================================================
 
 const NEURAL_PHRASES = [
+  // === Scientific/Technical ===
   'synapses firing',
   'retrieving patterns',
   'connecting memories',
@@ -63,6 +111,101 @@ const NEURAL_PHRASES = [
   'memory consolidating',
   'patterns emerging',
   'signals propagating',
+  'prefrontal cortex online',
+  'hippocampus engaged',
+  'amygdala checking vibes',
+  'cerebellum balancing',
+  'thalamus relaying',
+  'myelin sheath polishing',
+  'neurotransmitters deploying',
+  'dopamine levels rising',
+  'serotonin stabilizing',
+  'gray matter computing',
+  'white matter connecting',
+
+  // === Funny Memory Jokes ===
+  'remembering where I put the memories',
+  'wait, what was I doing again',
+  'loading memories from the void',
+  'searching the memory palace',
+  'found it! no wait, lost it',
+  'defragmenting brain storage',
+  'memories.zip extracting',
+  'RAM almost full, please wait',
+  'checking mental sticky notes',
+  'asking the hippocampus nicely',
+  'bribing neurons with glucose',
+  'shaking the memory tree',
+  'memories loading... eventually',
+  'brain.exe responding slowly',
+  'this might take a while',
+  'consulting the ancient scrolls',
+  'dusting off old memories',
+  'tip of the tongue syndrome',
+  'it was right here a second ago',
+
+  // === Alzheimer\'s/Forgetfulness Humor ===
+  'forgot why I opened this',
+  'senior moment in progress',
+  'memory not found (error 404)',
+  'who are you again?',
+  'have we met before?',
+  'déjà vu or just forgot',
+  'brain fog rolling in',
+  'lost train of thought, sending search party',
+  'what year is it?',
+  'remembering to remember',
+  'forgot what I forgot',
+  'mental post-it fell off',
+  'short-term memory buffering',
+  'long-term memory on vacation',
+
+  // === Neural Network Puns ===
+  'neurons having a meeting',
+  'brain cells brainstorming',
+  'synaptic traffic jam',
+  'neural highway construction',
+  'thoughts under construction',
+  'mind expansion in progress',
+  'cognitive load balancing',
+  'mental bandwidth allocating',
+  'thought bubbles forming',
+  'ideas percolating',
+  'inspiration downloading',
+  'creativity compiling',
+  'logic gates processing',
+  'parallel thoughts merging',
+  'consciousness rebooting',
+
+  // === Witty One-liners ===
+  'brain go brrrrr',
+  'big think energy',
+  'neurons go zoom',
+  'maximum brain usage',
+  'thinking cap equipped',
+  'wrinkles deepening',
+  'IQ temporarily boosted',
+  'wisdom loading...',
+  'enlightenment buffering',
+  'genius mode activating',
+  'smartness intensifies',
+  'brain cells multiplying',
+  'clever thoughts incoming',
+  'mind blown, reassembling',
+  'plot twist processing',
+
+  // === Cortex-Specific ===
+  'cortex coming online',
+  'memory banks warming up',
+  'cognitive engine starting',
+  'thought reactor igniting',
+  'brain cloud syncing',
+  'mental database querying',
+  'knowledge graph traversing',
+  'semantic memory scanning',
+  'episodic recall initiating',
+  'procedural memory loading',
+  'working memory clearing space',
 ];
 
 // =============================================================================
@@ -293,23 +436,39 @@ class NeuralAnimator {
     this.theme = options.theme || THEMES.nodes;
     this.frameIndex = 0;
     this.phraseIndex = 0;
+    this.pulseColorIndex = 0; // For color pulsation effect
     this.intervalId = null;
     this.isRunning = false;
+    this.shuffledPhrases = this._shufflePhrases(); // Randomize phrases each session
   }
 
   /**
-   * Get pulse frame with colors applied
+   * Shuffle phrases for variety (Fisher-Yates shuffle)
+   */
+  _shufflePhrases() {
+    const phrases = [...NEURAL_PHRASES];
+    for (let i = phrases.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [phrases[i], phrases[j]] = [phrases[j], phrases[i]];
+    }
+    return phrases;
+  }
+
+  /**
+   * Get pulse frame with colors and pulsation applied
    */
   _renderPulseFrame(frameIndex) {
     const frame = this.theme.pulseFrames[frameIndex % this.theme.pulseFrames.length];
     const colors = this.theme.colors;
 
-    // Apply colors to the pattern
+    // Apply colors to the pattern with pulsation on active elements
     let colored = frame.pattern;
+    const pulsedAccent = getPulsedColor(colors.accent, this.pulseColorIndex);
+    const pulsedPrimary = getPulsedColor(colors.primary, this.pulseColorIndex);
 
-    // Color the active node
-    colored = colored.replace(/●/g, c(colors.accent, '●'));
-    colored = colored.replace(/○/g, c(colors.primary, '○'));
+    // Color the active node with pulsation
+    colored = colored.replace(/●/g, pulsedAccent + '●' + COLORS.reset);
+    colored = colored.replace(/○/g, pulsedPrimary + '○' + COLORS.reset);
     colored = colored.replace(/[─┬┴├┤┼╭╮╰╯│]/g, match => c(colors.secondary, match));
     colored = colored.replace(/[∿≋∾≈·]/g, match => c(colors.secondary, match));
 
@@ -317,43 +476,49 @@ class NeuralAnimator {
   }
 
   /**
-   * Get current phrase
+   * Get current phrase with pulsating color
    */
   _getCurrentPhrase() {
-    return NEURAL_PHRASES[this.phraseIndex % NEURAL_PHRASES.length];
+    return this.shuffledPhrases[this.phraseIndex % this.shuffledPhrases.length];
   }
 
   /**
-   * Render a single animation frame
+   * Render a single animation frame with Claude-like color pulsation
    */
   renderFrame() {
     const pulse = this._renderPulseFrame(this.frameIndex);
     const phrase = this._getCurrentPhrase();
     const colors = this.theme.colors;
 
-    return `${pulse}  ${c(colors.secondary, phrase)}...`;
+    // Apply pulsation to the phrase text (Claude-like breathing effect)
+    const pulsedPhrase = getPulsedColor(colors.primary, this.pulseColorIndex) + phrase + COLORS.reset;
+    const dots = getPulsedColor(colors.secondary, this.pulseColorIndex) + '...' + COLORS.reset;
+
+    return `${pulse}  ${pulsedPhrase}${dots}`;
   }
 
   /**
-   * Start animated loading display
+   * Start animated loading display with color pulsation
    * @param {Function} onFrame - Callback for each frame
    * @param {number} interval - Frame interval in ms
    */
-  start(onFrame, interval = 150) {
+  start(onFrame, interval = 120) {
     if (this.isRunning) return;
 
     this.isRunning = true;
     this.frameIndex = 0;
     this.phraseIndex = 0;
+    this.pulseColorIndex = 0;
 
     // Initial frame
     onFrame(this.renderFrame());
 
     this.intervalId = setInterval(() => {
       this.frameIndex++;
+      this.pulseColorIndex++; // Advance color pulsation every frame
 
-      // Change phrase every 4 frames
-      if (this.frameIndex % 4 === 0) {
+      // Change phrase every 6 frames (slightly slower for readability with more phrases)
+      if (this.frameIndex % 6 === 0) {
         this.phraseIndex++;
       }
 
@@ -597,7 +762,9 @@ module.exports = {
   THEME_ORDER,
   NEURAL_PHRASES,
   COLORS,
+  PULSE_STATES,
 
-  // Helper
+  // Helpers
   colorize: c,
+  getPulsedColor,
 };
