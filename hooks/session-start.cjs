@@ -245,14 +245,41 @@ class SessionStartHook {
 }
 
 // =============================================================================
+// PROGRESS INDICATOR (stderr)
+// =============================================================================
+
+function showProgress(message, icon = '🧠') {
+  process.stderr.write(`${icon} ${message}\n`);
+}
+
+function showSummary(result) {
+  if (!result.success || !result.enabled) return;
+
+  const stats = result.stats || {};
+  const selected = stats.memoriesSelected || 0;
+  const tokens = stats.estimatedTokens || 0;
+  const duration = stats.duration || 0;
+
+  if (selected > 0) {
+    process.stderr.write(`✓ CMO: Loaded ${selected} memories (${tokens} tokens) in ${duration}ms\n`);
+  } else {
+    process.stderr.write(`✓ CMO: Ready (no relevant memories found)\n`);
+  }
+}
+
+// =============================================================================
 // MAIN EXECUTION
 // =============================================================================
 
 async function main() {
+  showProgress('CMO initializing...');
+
   const hook = new SessionStartHook();
   const result = await hook.execute();
 
-  // Output JSON result
+  showSummary(result);
+
+  // Output JSON result to stdout (for Claude context injection)
   console.log(JSON.stringify(result, null, 2));
 }
 
