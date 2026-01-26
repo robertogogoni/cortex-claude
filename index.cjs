@@ -1,15 +1,16 @@
 /**
- * Claude Memory Orchestrator (CMO) - Main Entry Point
+ * Cortex - Claude's Cognitive Layer (Cortex) - Main Entry Point
  *
  * A 100% persistent memory system for Claude Code that achieves
  * true cross-session memory through:
  * - Auto-extraction: Captures learnings from every session
  * - Auto-recall: Injects relevant context at session start
  * - Compounding learnings: LADS principles make the system smarter
+ * - Multi-source integration: JSONL, Episodic Memory MCP, Knowledge Graph MCP, CLAUDE.md
  *
  * LADS: Learnable, Adaptive, Documenting, Self-improving
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 'use strict';
@@ -19,6 +20,9 @@ const core = require('./core/index.cjs');
 
 // Hook exports
 const hooks = require('./hooks/index.cjs');
+
+// Adapter exports (v1.1.0 - Multi-source integration)
+const adapters = require('./adapters/index.cjs');
 
 // =============================================================================
 // COMBINED EXPORTS
@@ -86,15 +90,25 @@ module.exports = {
 
   // Query orchestration
   QueryOrchestrator: hooks.QueryOrchestrator,
-  MEMORY_SOURCES: hooks.MEMORY_SOURCES,
 
   // Extraction
   ExtractionEngine: hooks.ExtractionEngine,
   EXTRACTION_PATTERNS: hooks.EXTRACTION_PATTERNS,
   QUALITY_SIGNALS: hooks.QUALITY_SIGNALS,
 
+  // ============= ADAPTERS =============
+  // v1.1.0 - Multi-source integration
+  AdapterRegistry: adapters.AdapterRegistry,
+  createDefaultRegistry: adapters.createDefaultRegistry,
+  BaseAdapter: adapters.BaseAdapter,
+  JSONLAdapter: adapters.JSONLAdapter,
+  EpisodicMemoryAdapter: adapters.EpisodicMemoryAdapter,
+  KnowledgeGraphAdapter: adapters.KnowledgeGraphAdapter,
+  ClaudeMdAdapter: adapters.ClaudeMdAdapter,
+
   // ============= NAMESPACES =============
   // For organized access
   core,
   hooks,
+  adapters,
 };

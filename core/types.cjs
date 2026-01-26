@@ -1,7 +1,7 @@
 /**
- * Claude Memory Orchestrator - Type Definitions
+ * Cortex - Claude's Cognitive Layer - Type Definitions
  *
- * All shared types and constants for CMO.
+ * All shared types and constants for Cortex.
  * Using JSDoc for TypeScript-like documentation in CommonJS.
  */
 

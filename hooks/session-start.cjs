@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Claude Memory Orchestrator - SessionStart Hook
+ * Cortex - Claude's Cognitive Layer - SessionStart Hook
  *
  * This hook runs at the beginning of each Claude Code session.
  * It injects relevant memories into the conversation context.
  *
  * Environment variables:
- * - CMO_WORKING_DIR: Current working directory
- * - CMO_SESSION_ID: Current session ID
- * - CMO_PROMPT: Initial user prompt (if available)
+ * - CORTEX_WORKING_DIR: Current working directory
+ * - CORTEX_SESSION_ID: Current session ID
+ * - CORTEX_PROMPT: Initial user prompt (if available)
  *
  * Output: JSON with injection content for session start
  */
@@ -23,6 +23,7 @@ const BASE_PATH = path.dirname(__dirname);
 
 // Dynamic requires with error handling
 let QueryOrchestrator, ContextAnalyzer, getConfigManager, getLADSCore, generateId, getTimestamp;
+let ProgressDisplay, InjectionFormatter;
 
 try {
   ({ QueryOrchestrator } = require('./query-orchestrator.cjs'));
@@ -30,6 +31,7 @@ try {
   ({ getConfigManager } = require('../core/config.cjs'));
   ({ getLADSCore } = require('../core/lads/index.cjs'));
   ({ generateId, getTimestamp } = require('../core/types.cjs'));
+  ({ ProgressDisplay, InjectionFormatter } = require('./injection-formatter.cjs'));
 } catch (error) {
   // If modules not found, output empty injection
   console.log(JSON.stringify({
@@ -47,7 +49,7 @@ try {
 class SessionStartHook {
   /**
    * @param {Object} options
-   * @param {string} options.basePath - Base path for CMO
+   * @param {string} options.basePath - Base path for Cortex
    * @param {Object} options.config - Configuration manager
    */
   constructor(options = {}) {
@@ -57,7 +59,15 @@ class SessionStartHook {
     this.orchestrator = new QueryOrchestrator({
       basePath: this.basePath,
       tokenBudget: this.config.get('sessionStart.slots') || {},
-      workingDir: process.env.CMO_WORKING_DIR || process.cwd(),
+      workingDir: process.env.CORTEX_WORKING_DIR || process.cwd(),
+    });
+
+    // Initialize formatter with config
+    const formatType = this.config.get('sessionStart.format') || 'rich';
+    this.formatter = new InjectionFormatter({
+      format: formatType,
+      includeSourceInfo: true,
+      includeRelevance: true,
     });
 
     this.lads = null;
@@ -74,9 +84,9 @@ class SessionStartHook {
    */
   async execute() {
     const startTime = Date.now();
-    const sessionId = process.env.CMO_SESSION_ID || generateId();
-    const workingDir = process.env.CMO_WORKING_DIR || process.cwd();
-    const initialPrompt = process.env.CMO_PROMPT || '';
+    const sessionId = process.env.CORTEX_SESSION_ID || generateId();
+    const workingDir = process.env.CORTEX_WORKING_DIR || process.cwd();
+    const initialPrompt = process.env.CORTEX_PROMPT || '';
 
     // Check if enabled
     if (!this.config.get('sessionStart.enabled')) {
@@ -122,30 +132,39 @@ class SessionStartHook {
         decisionId = trackResult.id;
       }
 
-      // Format for injection
-      const injection = this.orchestrator.formatForInjection(
-        queryResult.memories,
-        { format: this.config.get('sessionStart.format') || 'xml' }
-      );
+      // Calculate stats by type
+      const byType = {};
+      for (const memory of queryResult.memories) {
+        const type = memory.type || 'general';
+        byType[type] = (byType[type] || 0) + 1;
+      }
 
       const duration = Date.now() - startTime;
 
-      // Build context summary
-      const contextSummary = this._buildContextSummary(queryResult.context);
+      // Build enhanced stats
+      const stats = {
+        duration,
+        context: queryResult.context,
+        memoriesQueried: queryResult.stats.totalQueried,
+        memoriesSelected: queryResult.stats.totalSelected,
+        estimatedTokens: queryResult.stats.estimatedTokens,
+        bySource: queryResult.stats.bySource,
+        byType,
+      };
+
+      // Format for injection using rich formatter
+      const injection = this.formatter.formatMemories(
+        queryResult.memories,
+        queryResult.context,
+        stats
+      );
 
       return {
         success: true,
         enabled: true,
-        injection: injection ? `${contextSummary}\n\n${injection}` : contextSummary,
+        injection,
         decisionId,
-        stats: {
-          duration,
-          context: queryResult.context,
-          memoriesQueried: queryResult.stats.totalQueried,
-          memoriesSelected: queryResult.stats.totalSelected,
-          estimatedTokens: queryResult.stats.estimatedTokens,
-          bySource: queryResult.stats.bySource,
-        },
+        stats,
       };
     } catch (error) {
       console.error('[SessionStart] Execution failed:', error.message);
@@ -245,39 +264,47 @@ class SessionStartHook {
 }
 
 // =============================================================================
-// PROGRESS INDICATOR (stderr)
-// =============================================================================
-
-function showProgress(message, icon = '🧠') {
-  process.stderr.write(`${icon} ${message}\n`);
-}
-
-function showSummary(result) {
-  if (!result.success || !result.enabled) return;
-
-  const stats = result.stats || {};
-  const selected = stats.memoriesSelected || 0;
-  const tokens = stats.estimatedTokens || 0;
-  const duration = stats.duration || 0;
-
-  if (selected > 0) {
-    process.stderr.write(`✓ CMO: Loaded ${selected} memories (${tokens} tokens) in ${duration}ms\n`);
-  } else {
-    process.stderr.write(`✓ CMO: Ready (no relevant memories found)\n`);
-  }
-}
-
-// =============================================================================
 // MAIN EXECUTION
 // =============================================================================
 
 async function main() {
-  showProgress('CMO initializing...');
+  // Check for compact mode (minimal output)
+  const compactMode = process.env.CORTEX_COMPACT === 'true' ||
+                      process.argv.includes('--compact') ||
+                      process.argv.includes('-c');
+
+  // Initialize progress display
+  const progress = new ProgressDisplay({ verbose: !compactMode });
+
+  if (!compactMode) {
+    progress.init();
+    progress.step('Analyzing session context...', 'loading');
+  }
 
   const hook = new SessionStartHook();
   const result = await hook.execute();
 
-  showSummary(result);
+  // Show summary in progress display
+  if (!compactMode) {
+    if (result.success && result.enabled) {
+      progress.summary(result.stats);
+    } else if (!result.enabled) {
+      progress.step('Cortex disabled in config', 'warning');
+    } else {
+      progress.error(result.error || 'Unknown error');
+    }
+  } else {
+    // Compact mode: single line output
+    const stats = result.stats || {};
+    const selected = stats.memoriesSelected || 0;
+    const tokens = stats.estimatedTokens || 0;
+
+    if (selected > 0) {
+      process.stderr.write(`✓ Cortex: ${selected} memories (${tokens} tokens)\n`);
+    } else {
+      process.stderr.write(`✓ Cortex: Ready\n`);
+    }
+  }
 
   // Output JSON result to stdout (for Claude context injection)
   console.log(JSON.stringify(result, null, 2));

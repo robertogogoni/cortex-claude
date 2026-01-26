@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Memory Orchestrator - Core Tests
+ * Cortex - Claude's Cognitive Layer - Core Tests
  *
  * Tests for core infrastructure components:
  * - Types and utilities
@@ -456,7 +456,7 @@ async function testConfig() {
 
 async function main() {
   console.log('╔════════════════════════════════════════╗');
-  console.log('║   CMO Core Tests                       ║');
+  console.log('║   Cortex Core Tests                       ║');
   console.log('╚════════════════════════════════════════╝');
 
   setup();

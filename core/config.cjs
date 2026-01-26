@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Configuration Manager
+ * Cortex - Claude's Cognitive Layer - Configuration Manager
  *
  * Configuration with:
  * - Version tracking and history

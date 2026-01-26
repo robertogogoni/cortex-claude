@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Context Analyzer
+ * Cortex - Claude's Cognitive Layer - Context Analyzer
  *
  * Analyzes current session context to determine what memories are relevant.
  * Extracts intent, project info, and semantic signals from:
@@ -61,6 +61,33 @@ const INTENT_PATTERNS = {
 /**
  * File type to domain mapping
  */
+/**
+ * Common English stopwords to filter from keyword extraction
+ */
+const STOPWORDS = new Set([
+  // Articles & determiners
+  'a', 'an', 'the', 'this', 'that', 'these', 'those',
+  // Pronouns
+  'i', 'me', 'my', 'you', 'your', 'he', 'she', 'it', 'we', 'they',
+  'him', 'her', 'his', 'its', 'our', 'their', 'who', 'what', 'which',
+  // Prepositions
+  'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about',
+  'into', 'through', 'during', 'before', 'after', 'above', 'below',
+  // Conjunctions
+  'and', 'or', 'but', 'if', 'then', 'else', 'when', 'while', 'as',
+  // Verbs (common)
+  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has',
+  'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+  'can', 'may', 'might', 'must', 'shall',
+  // Adverbs
+  'not', 'no', 'yes', 'very', 'just', 'also', 'only', 'now', 'here',
+  'there', 'how', 'why', 'all', 'each', 'every', 'both', 'few', 'more',
+  'most', 'other', 'some', 'such', 'any', 'so', 'than', 'too', 'out',
+  // Common Claude Code prompts
+  'help', 'please', 'want', 'need', 'like', 'get', 'make', 'use',
+  'let', 'know', 'think', 'see', 'look', 'tell', 'show', 'give',
+]);
+
 const FILE_DOMAINS = {
   // Frontend
   '.jsx': 'frontend',
@@ -122,23 +149,55 @@ class ContextAnalyzer {
    * @param {Object} options
    * @param {string} options.workingDir - Current working directory
    * @param {Object} options.weights - Custom weights for scoring
+   * @param {Object} options.semantic - Semantic analyzer options
+   * @param {boolean} options.semantic.enabled - Enable semantic analysis (default: false)
+   * @param {boolean} options.semantic.useHaiku - Use Haiku API (default: true)
+   * @param {boolean} options.semantic.useCache - Enable caching (default: true)
+   * @param {boolean} options.semantic.useAdaptation - Enable auto-learning (default: true)
    */
   constructor(options = {}) {
     this.workingDir = options.workingDir || process.cwd();
     this.weights = {
-      projectMatch: 0.4,
-      intentMatch: 0.25,
-      tagMatch: 0.2,
-      recency: 0.15,
+      projectMatch: 0.3,      // Reduced from 0.4
+      intentMatch: 0.2,       // Reduced from 0.25
+      tagMatch: 0.15,         // Reduced from 0.2
+      recency: 0.1,           // Reduced from 0.15
+      contentMatch: 0.25,     // Boost memories containing prompt keywords
+      semanticMatch: 0.15,    // NEW: Boost from semantic analysis
       ...options.weights,
     };
 
     this._projectCache = null;
     this._gitInfoCache = null;
+
+    // Semantic analyzer (lazy-loaded)
+    this._semanticOptions = options.semantic || {};
+    this._semanticAnalyzer = null;
   }
 
   /**
-   * Analyze the current context
+   * Get semantic analyzer (lazy initialization)
+   * @returns {SemanticIntentAnalyzer|null}
+   */
+  get semanticAnalyzer() {
+    if (this._semanticAnalyzer === null && this._semanticOptions.enabled) {
+      try {
+        const { SemanticIntentAnalyzer } = require('./semantic-intent-analyzer.cjs');
+        this._semanticAnalyzer = new SemanticIntentAnalyzer({
+          useHaiku: this._semanticOptions.useHaiku !== false,
+          useCache: this._semanticOptions.useCache !== false,
+          useAdaptation: this._semanticOptions.useAdaptation !== false,
+        });
+      } catch (error) {
+        console.error('[ContextAnalyzer] Failed to load SemanticIntentAnalyzer:', error.message);
+        this._semanticAnalyzer = false; // Prevent retry
+      }
+    }
+    return this._semanticAnalyzer || null;
+  }
+
+  /**
+   * Analyze the current context (synchronous, keyword-based)
    * @param {Object} input
    * @param {string} input.prompt - Optional user prompt
    * @param {string[]} input.recentFiles - Recently accessed files
@@ -149,6 +208,7 @@ class ContextAnalyzer {
     const intent = this.classifyIntent(input.prompt || '');
     const domains = this.detectDomains(input.recentFiles || []);
     const tags = this.extractTags(input);
+    const keywords = this.extractKeywords(input.prompt || '');
 
     return {
       projectHash: project.hash,
@@ -162,7 +222,98 @@ class ContextAnalyzer {
       gitBranch: project.gitBranch,
       gitRemote: project.gitRemote,
       timestamp: new Date().toISOString(),
+      // Internal field for content matching (prefixed with _ to indicate internal use)
+      _promptKeywords: keywords,
     };
+  }
+
+  /**
+   * Analyze context with semantic enhancement (async, uses Haiku API when available)
+   * Falls back to basic analysis if semantic analyzer unavailable
+   * @param {Object} input
+   * @param {string} input.prompt - User prompt
+   * @param {string[]} input.recentFiles - Recently accessed files
+   * @param {boolean} input.forceApi - Bypass cache for semantic analysis
+   * @returns {Promise<Object>} Enhanced context analysis result
+   */
+  async analyzeWithSemantic(input = {}) {
+    // Get basic analysis first
+    const basicContext = this.analyze(input);
+
+    // If semantic analyzer not available, return basic
+    if (!this.semanticAnalyzer) {
+      return {
+        ...basicContext,
+        _matchStrategy: 'keyword',
+        _complexity: 'moderate',
+        _memoryLimit: 15,
+        _semanticEnabled: false,
+      };
+    }
+
+    // Get semantic analysis
+    try {
+      const semantic = await this.semanticAnalyzer.analyze(input.prompt || '', {
+        additionalContext: input.recentFiles?.length
+          ? `Recent files: ${input.recentFiles.slice(0, 5).join(', ')}`
+          : undefined,
+        forceApi: input.forceApi,
+      });
+
+      // Merge semantic insights with basic context
+      return {
+        ...basicContext,
+        // Override intent if semantic has higher confidence
+        intent: semantic.intent.confidence > basicContext.intentConfidence
+          ? semantic.intent.primary
+          : basicContext.intent,
+        intentConfidence: Math.max(
+          semantic.intent.confidence,
+          basicContext.intentConfidence
+        ),
+        intentDescription: semantic.intent.description,
+        // Enhanced keywords from semantic analysis
+        _promptKeywords: [
+          ...new Set([
+            ...basicContext._promptKeywords,
+            ...(semantic.keywords?.required || []),
+          ]),
+        ],
+        _optionalKeywords: semantic.keywords?.optional || [],
+        _excludedKeywords: semantic.keywords?.excluded || [],
+        // Semantic-specific fields
+        _concepts: semantic.concepts || [],
+        _matchStrategy: semantic.matchStrategy?.primary || 'keyword',
+        _matchReasoning: semantic.matchStrategy?.reasoning,
+        _complexity: semantic.complexity || 'moderate',
+        _memoryLimit: semantic.memoryLimit || 15,
+        _semanticEnabled: true,
+        _semanticSource: semantic.source,
+        _semanticCached: semantic.cached,
+      };
+    } catch (error) {
+      console.error('[ContextAnalyzer] Semantic analysis failed:', error.message);
+      return {
+        ...basicContext,
+        _matchStrategy: 'keyword',
+        _complexity: 'moderate',
+        _memoryLimit: 15,
+        _semanticEnabled: false,
+        _semanticError: error.message,
+      };
+    }
+  }
+
+  /**
+   * Record feedback for auto-learning (delegates to semantic analyzer)
+   * @param {string} query - Original query
+   * @param {Object} selectedMemory - Memory the user found useful
+   * @param {Object} context - Analysis context
+   */
+  recordFeedback(query, selectedMemory, context) {
+    if (this.semanticAnalyzer) {
+      this.semanticAnalyzer.recordFeedback(query, selectedMemory, context);
+    }
   }
 
   /**
@@ -377,6 +528,32 @@ class ContextAnalyzer {
   }
 
   /**
+   * Extract significant keywords from prompt for content matching
+   * Filters stopwords and returns normalized keywords
+   * @param {string} prompt
+   * @returns {string[]}
+   */
+  extractKeywords(prompt) {
+    if (!prompt) return [];
+
+    // Tokenize: split on non-alphanumeric, keep hyphenated words
+    const tokens = prompt.toLowerCase()
+      .replace(/[^a-z0-9\-_]/gi, ' ')
+      .split(/\s+/)
+      .filter(token => token.length >= 2);
+
+    // Filter stopwords and deduplicate
+    const keywords = new Set();
+    for (const token of tokens) {
+      if (!STOPWORDS.has(token) && token.length >= 3) {
+        keywords.add(token);
+      }
+    }
+
+    return [...keywords];
+  }
+
+  /**
    * Score a memory against current context
    * @param {Object} memory
    * @param {Object} context
@@ -385,13 +562,17 @@ class ContextAnalyzer {
   scoreMemory(memory, context) {
     let score = 0;
 
-    // Project match (highest weight)
+    // Project match
     if (memory.projectHash === context.projectHash) {
       score += this.weights.projectMatch;
+    } else if (memory.projectHash === null) {
+      // Global memories (e.g., from ~/.claude/CLAUDE.md) get partial project score
+      // They're cross-project and always somewhat relevant
+      score += this.weights.projectMatch * 0.3;
     }
 
     // Intent match
-    const intentConfidence = context.intentConfidence ?? 1.0; // Default to 1.0 if not specified
+    const intentConfidence = context.intentConfidence ?? 1.0;
     if (memory.intent === context.intent) {
       score += this.weights.intentMatch * intentConfidence;
     } else if (context.secondaryIntents?.includes(memory.intent)) {
@@ -408,15 +589,134 @@ class ContextAnalyzer {
       score += this.weights.tagMatch * tagScore;
     }
 
+    // Content keyword matching
+    // Match required keywords from prompt against memory content
+    const memoryText = ((memory.content || '') + ' ' + (memory.summary || '')).toLowerCase();
+    let keywordScore = 0;
+    let matchedKeywords = [];
+
+    if (context._promptKeywords?.length) {
+      for (const keyword of context._promptKeywords) {
+        if (memoryText.includes(keyword)) {
+          matchedKeywords.push(keyword);
+        }
+      }
+
+      if (matchedKeywords.length > 0) {
+        // Score based on proportion of keywords matched
+        const matchRatio = matchedKeywords.length / context._promptKeywords.length;
+        keywordScore = this.weights.contentMatch * matchRatio;
+        score += keywordScore;
+      }
+    }
+
+    // Semantic concept matching (when semantic analysis is enabled)
+    // This boosts memories that match high-level concepts from Haiku analysis
+    if (context._concepts?.length && context._semanticEnabled) {
+      let conceptMatches = 0;
+      for (const concept of context._concepts) {
+        if (memoryText.includes(concept.toLowerCase())) {
+          conceptMatches++;
+        }
+        // Also check tags for concept matches
+        if (memory.tags?.some(t => t.toLowerCase().includes(concept.toLowerCase()))) {
+          conceptMatches++;
+        }
+      }
+
+      if (conceptMatches > 0) {
+        // Semantic matches get the semanticMatch weight
+        const conceptRatio = Math.min(conceptMatches / context._concepts.length, 1);
+        score += this.weights.semanticMatch * conceptRatio;
+      }
+    }
+
+    // Apply match strategy multiplier (from semantic analysis)
+    // If semantic analyzer determined this should be a "semantic" match type
+    // but we're falling back to keyword, slightly reduce the score
+    if (context._matchStrategy === 'semantic' && matchedKeywords.length > 0 && keywordScore > 0) {
+      // Boost: semantic strategy confirmed by keyword match
+      score *= 1.1;
+    }
+
+    // Penalize excluded keywords
+    if (context._excludedKeywords?.length) {
+      for (const excluded of context._excludedKeywords) {
+        if (memoryText.includes(excluded.toLowerCase())) {
+          score *= 0.5; // Significant penalty
+          break;
+        }
+      }
+    }
+
     // Recency decay (exponential)
-    if (memory.timestamp) {
-      const ageMs = Date.now() - new Date(memory.timestamp).getTime();
+    // Support multiple timestamp fields: timestamp, sourceTimestamp, createdAt
+    const timestamp = memory.timestamp || memory.sourceTimestamp || memory.createdAt;
+    if (timestamp) {
+      const ageMs = Date.now() - new Date(timestamp).getTime();
       const ageDays = ageMs / (1000 * 60 * 60 * 24);
       const recencyScore = Math.exp(-ageDays / 30); // 30-day half-life
       score += this.weights.recency * recencyScore;
     }
 
     return Math.min(score, 1);
+  }
+
+  /**
+   * Score memory with match type detection
+   * Returns detailed scoring breakdown
+   * @param {Object} memory
+   * @param {Object} context
+   * @returns {Object} { score, matchType, matchedKeywords, breakdown }
+   */
+  scoreMemoryDetailed(memory, context) {
+    const score = this.scoreMemory(memory, context);
+    const memoryText = ((memory.content || '') + ' ' + (memory.summary || '')).toLowerCase();
+
+    // Determine match type
+    let matchType = 'none';
+    const matchedKeywords = [];
+    const matchedConcepts = [];
+
+    // Check keyword matches
+    if (context._promptKeywords?.length) {
+      for (const keyword of context._promptKeywords) {
+        if (memoryText.includes(keyword)) {
+          matchedKeywords.push(keyword);
+        }
+      }
+    }
+
+    // Check concept matches
+    if (context._concepts?.length) {
+      for (const concept of context._concepts) {
+        if (memoryText.includes(concept.toLowerCase())) {
+          matchedConcepts.push(concept);
+        }
+      }
+    }
+
+    // Determine primary match type
+    if (context._semanticEnabled && matchedConcepts.length > 0) {
+      matchType = 'semantic';
+    } else if (matchedKeywords.length > 0) {
+      matchType = 'keyword';
+    } else if (score > 0.1) {
+      matchType = 'pattern'; // Matched by tags/project/intent
+    }
+
+    return {
+      score,
+      matchType,
+      matchedKeywords,
+      matchedConcepts,
+      breakdown: {
+        hasProjectMatch: memory.projectHash === context.projectHash,
+        hasIntentMatch: memory.intent === context.intent,
+        keywordMatchCount: matchedKeywords.length,
+        conceptMatchCount: matchedConcepts.length,
+      },
+    };
   }
 
   /**
@@ -441,6 +741,17 @@ class ContextAnalyzer {
   clearCache() {
     this._projectCache = null;
     this._gitInfoCache = null;
+    if (this._semanticAnalyzer && this._semanticAnalyzer.clearCache) {
+      this._semanticAnalyzer.clearCache();
+    }
+  }
+
+  /**
+   * Get semantic analyzer statistics
+   * @returns {Object|null}
+   */
+  getSemanticStats() {
+    return this.semanticAnalyzer?.getStats() || null;
   }
 }
 
@@ -452,4 +763,5 @@ module.exports = {
   ContextAnalyzer,
   INTENT_PATTERNS,
   FILE_DOMAINS,
+  STOPWORDS,
 };

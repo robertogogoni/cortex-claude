@@ -1,69 +1,26 @@
 /**
- * Claude Memory Orchestrator - Query Orchestrator
+ * Cortex - Claude's Cognitive Layer - Query Orchestrator (v1.1.0)
  *
- * Coordinates memory retrieval from multiple sources:
- * - Working memory (recent, high-priority)
- * - Long-term memory (persistent learnings)
- * - Skill memory (extracted skills)
- * - Project memory (project-specific)
+ * Coordinates memory retrieval from MULTIPLE sources via Adapter Pattern:
+ * - JSONL Local: Working, short-term, long-term, skills (always available)
+ * - Episodic Memory MCP: 233+ archived conversations with semantic search
+ * - Knowledge Graph MCP: Structured entities and relations
+ * - CLAUDE.md Files: User-curated knowledge and solutions
  *
- * Applies deduplication, ranking, and token budgeting.
+ * Applies deduplication, ranking, and token budgeting across all sources.
+ *
+ * @version 1.1.0
+ * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md
  */
 
 'use strict';
 
-const path = require('path');
 const { expandPath } = require('../core/types.cjs');
-const { JSONLStore } = require('../core/storage.cjs');
 const { ContextAnalyzer } = require('./context-analyzer.cjs');
+const { createDefaultRegistry, AdapterRegistry } = require('../adapters/index.cjs');
 
 // =============================================================================
-// MEMORY SOURCES
-// =============================================================================
-
-/**
- * Memory source configuration
- */
-const MEMORY_SOURCES = {
-  working: {
-    name: 'Working Memory',
-    priority: 1.0,
-    path: 'data/memories/working.jsonl',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    description: 'Recent, high-priority memories from current session',
-  },
-  shortTerm: {
-    name: 'Short-Term Memory',
-    priority: 0.9,
-    path: 'data/memories/short-term.jsonl',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    description: 'Memories from recent sessions',
-  },
-  longTerm: {
-    name: 'Long-Term Memory',
-    priority: 0.7,
-    path: 'data/memories/long-term.jsonl',
-    maxAge: null, // No expiry
-    description: 'Consolidated permanent memories',
-  },
-  skills: {
-    name: 'Skill Memory',
-    priority: 0.8,
-    path: 'data/skills/index.jsonl',
-    maxAge: null,
-    description: 'Extracted procedural knowledge',
-  },
-  project: {
-    name: 'Project Memory',
-    priority: 0.85,
-    pathPattern: 'data/projects/{hash}.jsonl',
-    maxAge: null,
-    description: 'Project-specific memories',
-  },
-};
-
-// =============================================================================
-// QUERY ORCHESTRATOR
+// QUERY ORCHESTRATOR (v1.1.0 - Adapter Pattern)
 // =============================================================================
 
 class QueryOrchestrator {
@@ -71,159 +28,191 @@ class QueryOrchestrator {
    * @param {Object} options
    * @param {string} options.basePath - Base path for memory storage
    * @param {Object} options.tokenBudget - Token limits per category
-   * @param {Object} options.sourceWeights - Custom source weights
+   * @param {Object} options.adapterConfig - Configuration for adapters
+   * @param {Function} options.mcpCaller - Function to call MCP tools (required for MCP adapters)
+   * @param {Object} options.semantic - Semantic analysis options
+   * @param {boolean} options.semantic.enabled - Enable Haiku-powered semantic analysis
+   * @param {boolean} options.semantic.useHaiku - Use Haiku API (default: true)
+   * @param {boolean} options.semantic.useCache - Enable semantic cache (default: true)
+   * @param {boolean} options.semantic.useAdaptation - Enable auto-learning (default: true)
    */
   constructor(options = {}) {
     this.basePath = expandPath(options.basePath || '~/.claude/memory');
+
     this.tokenBudget = {
       total: options.tokenBudget?.total || 2000,
       perSource: options.tokenBudget?.perSource || 500,
       perMemory: options.tokenBudget?.perMemory || 200,
       ...options.tokenBudget,
     };
-    this.sourceWeights = {
-      ...Object.fromEntries(
-        Object.entries(MEMORY_SOURCES).map(([k, v]) => [k, v.priority])
-      ),
-      ...options.sourceWeights,
-    };
+
+    // Semantic analysis options
+    this._semanticEnabled = options.semantic?.enabled === true;
 
     this.contextAnalyzer = new ContextAnalyzer({
       workingDir: options.workingDir || process.cwd(),
       weights: options.contextWeights,
+      semantic: this._semanticEnabled ? {
+        enabled: true,
+        useHaiku: options.semantic?.useHaiku !== false,
+        useCache: options.semantic?.useCache !== false,
+        useAdaptation: options.semantic?.useAdaptation !== false,
+      } : undefined,
     });
 
-    // Source stores (lazy-loaded)
-    this._stores = {};
+    // Initialize adapter registry with all memory sources
+    this.registry = createDefaultRegistry({
+      basePath: this.basePath,
+      mcpCaller: options.mcpCaller,
+      adapters: options.adapterConfig,
+    });
+
+    // Store MCP caller for later injection
+    this._mcpCaller = options.mcpCaller || null;
   }
 
   /**
-   * Get or create a store for a source
-   * @param {string} sourceName
-   * @param {string} projectHash - Required for project source
-   * @returns {JSONLStore|null}
+   * Set or update the MCP caller function
+   * Call this when MCP tools become available (e.g., during hook execution)
+   * @param {Function} caller - Function that calls MCP tools
    */
-  _getStore(sourceName, projectHash = null) {
-    const source = MEMORY_SOURCES[sourceName];
-    if (!source) return null;
-
-    let storePath;
-    if (sourceName === 'project') {
-      if (!projectHash) return null;
-      storePath = source.pathPattern.replace('{hash}', projectHash);
-    } else {
-      storePath = source.path;
-    }
-
-    const fullPath = path.join(this.basePath, storePath);
-    const cacheKey = fullPath;
-
-    if (!this._stores[cacheKey]) {
-      this._stores[cacheKey] = new JSONLStore(fullPath, {
-        indexFn: r => r.id,
-      });
-    }
-
-    return this._stores[cacheKey];
+  setMcpCaller(caller) {
+    this._mcpCaller = caller;
+    this.registry.setMcpCaller(caller);
   }
 
   /**
-   * Query memories from a single source
-   * @param {string} sourceName
-   * @param {Object} context
-   * @param {Object} options
-   * @returns {Promise<Object[]>}
-   */
-  async _querySource(sourceName, context, options = {}) {
-    const source = MEMORY_SOURCES[sourceName];
-    if (!source) return [];
-
-    const store = this._getStore(sourceName, context.projectHash);
-    if (!store) return [];
-
-    try {
-      // Load if not already loaded
-      if (!store.loaded) {
-        await store.load();
-      }
-
-      let memories = store.getAll();
-
-      // Filter by max age if applicable
-      if (source.maxAge) {
-        const cutoff = Date.now() - source.maxAge;
-        memories = memories.filter(m => {
-          const ts = new Date(m.timestamp || m.createdAt || 0).getTime();
-          return ts >= cutoff;
-        });
-      }
-
-      // Filter by type if specified
-      if (options.types?.length) {
-        memories = memories.filter(m => options.types.includes(m.type));
-      }
-
-      // Add source metadata
-      return memories.map(m => ({
-        ...m,
-        _source: sourceName,
-        _sourcePriority: this.sourceWeights[sourceName] || source.priority,
-      }));
-    } catch (error) {
-      console.error(`[QueryOrchestrator] Failed to query ${sourceName}:`, error.message);
-      return [];
-    }
-  }
-
-  /**
-   * Query all relevant memories
+   * Query all relevant memories from ALL sources
    * @param {Object} input
    * @param {string} input.prompt - Optional user prompt for context
    * @param {string[]} input.recentFiles - Recently accessed files
-   * @param {string[]} input.sources - Specific sources to query (default: all)
    * @param {string[]} input.types - Memory types to include
+   * @param {string[]} input.adapters - Specific adapters to query (default: all enabled)
+   * @param {boolean} input.useSemantic - Override semantic analysis setting for this query
+   * @param {boolean} input.forceSemanticApi - Bypass semantic cache
    * @returns {Promise<Object>}
    */
   async query(input = {}) {
-    // Analyze context
-    const context = this.contextAnalyzer.analyze({
-      prompt: input.prompt,
-      recentFiles: input.recentFiles,
-    });
+    // Determine if semantic analysis should be used
+    const useSemantic = input.useSemantic ?? this._semanticEnabled;
 
-    // Determine which sources to query
-    const sourcesToQuery = input.sources || Object.keys(MEMORY_SOURCES);
+    // Analyze context from prompt and environment
+    // Use async semantic analysis when enabled
+    let context;
+    if (useSemantic) {
+      context = await this.contextAnalyzer.analyzeWithSemantic({
+        prompt: input.prompt,
+        recentFiles: input.recentFiles,
+        forceApi: input.forceSemanticApi,
+      });
+    } else {
+      context = this.contextAnalyzer.analyze({
+        prompt: input.prompt,
+        recentFiles: input.recentFiles,
+      });
+    }
 
-    // Query all sources in parallel
-    const sourceResults = await Promise.all(
-      sourcesToQuery.map(source =>
-        this._querySource(source, context, { types: input.types })
-      )
-    );
-
-    // Flatten and deduplicate
-    const allMemories = this._deduplicateMemories(sourceResults.flat());
-
-    // Rank by relevance
-    const rankedMemories = this.contextAnalyzer.rankMemories(allMemories, context);
-
-    // Apply token budget
-    const selectedMemories = this._applyTokenBudget(rankedMemories);
-
-    return {
-      context,
-      memories: selectedMemories,
-      stats: {
-        totalQueried: allMemories.length,
-        totalSelected: selectedMemories.length,
-        bySource: this._countBySource(selectedMemories),
-        estimatedTokens: this._estimateTokens(selectedMemories),
-      },
+    // Build query options for adapters
+    // IMPORTANT: Don't pass user's limit to adapters - that would cut off results
+    // BEFORE context-aware ranking. Instead, fetch more candidates and let
+    // ranking + token budget select the most relevant ones.
+    const queryOptions = {
+      types: input.types,
+      limit: 500,  // Internal limit per adapter - enough candidates for ranking
     };
+
+    // Store user's desired final limit (for potential future use after ranking)
+    const finalLimit = input.limit || 100;
+
+    // If specific adapters requested, temporarily disable others
+    let originalStates = null;
+    if (input.adapters?.length) {
+      originalStates = this._setEnabledAdapters(input.adapters);
+    }
+
+    try {
+      // Query all enabled adapters in parallel
+      const { results: allMemories, stats: adapterStats } = await this.registry.queryAll(
+        context,
+        queryOptions
+      );
+
+      // Deduplicate memories (same content may come from multiple sources)
+      const dedupedMemories = this._deduplicateMemories(allMemories);
+
+      // Rank by relevance using context analyzer
+      const rankedMemories = this.contextAnalyzer.rankMemories(dedupedMemories, context);
+
+      // Apply token budget
+      const selectedMemories = this._applyTokenBudget(rankedMemories);
+
+      // Optionally limit by semantic complexity
+      let finalMemories = selectedMemories;
+      if (context._memoryLimit && selectedMemories.length > context._memoryLimit) {
+        finalMemories = selectedMemories.slice(0, context._memoryLimit);
+      }
+
+      return {
+        context,
+        memories: finalMemories,
+        stats: {
+          totalQueried: allMemories.length,
+          totalDeduplicated: dedupedMemories.length,
+          totalSelected: finalMemories.length,
+          bySource: this._countBySource(finalMemories),
+          byAdapter: adapterStats,
+          estimatedTokens: this._estimateTokens(finalMemories),
+          // Semantic analysis stats
+          semantic: useSemantic ? {
+            enabled: true,
+            complexity: context._complexity,
+            matchStrategy: context._matchStrategy,
+            memoryLimit: context._memoryLimit,
+            source: context._semanticSource,
+            cached: context._semanticCached,
+          } : { enabled: false },
+        },
+      };
+    } finally {
+      // Restore original adapter states if we modified them
+      if (originalStates) {
+        this._restoreAdapterStates(originalStates);
+      }
+    }
+  }
+
+  /**
+   * Temporarily enable only specific adapters
+   * @private
+   * @param {string[]} adapterNames
+   * @returns {Map<string, boolean>} Original states
+   */
+  _setEnabledAdapters(adapterNames) {
+    const originalStates = new Map();
+    const requested = new Set(adapterNames.map(n => n.toLowerCase()));
+
+    for (const adapter of this.registry.getAll()) {
+      originalStates.set(adapter.name, adapter.enabled);
+      adapter.enabled = requested.has(adapter.name.toLowerCase());
+    }
+
+    return originalStates;
+  }
+
+  /**
+   * Restore adapter enabled states
+   * @private
+   * @param {Map<string, boolean>} states
+   */
+  _restoreAdapterStates(states) {
+    for (const [name, enabled] of states) {
+      this.registry.setEnabled(name, enabled);
+    }
   }
 
   /**
    * Deduplicate memories based on content similarity
+   * Keeps the memory with highest source priority when duplicates found
    * @param {Object[]} memories
    * @returns {Object[]}
    */
@@ -231,7 +220,7 @@ class QueryOrchestrator {
     const seen = new Map(); // content hash -> memory
 
     for (const memory of memories) {
-      // Create a simple content hash
+      // Create a content key for comparison
       const contentKey = this._getContentKey(memory);
 
       if (!seen.has(contentKey)) {
@@ -261,7 +250,7 @@ class QueryOrchestrator {
 
   /**
    * Apply token budget to select final memories
-   * @param {Object[]} memories - Ranked memories
+   * @param {Object[]} memories - Ranked memories (highest relevance first)
    * @returns {Object[]}
    */
   _applyTokenBudget(memories) {
@@ -308,7 +297,7 @@ class QueryOrchestrator {
     const metadata = JSON.stringify({
       type: memory.type,
       tags: memory.tags,
-      timestamp: memory.timestamp,
+      timestamp: memory.sourceTimestamp || memory.timestamp,
     });
     return Math.ceil((content.length + metadata.length) / 4);
   }
@@ -336,10 +325,16 @@ class QueryOrchestrator {
     return counts;
   }
 
+  // ===========================================================================
+  // FORMATTING METHODS
+  // ===========================================================================
+
   /**
-   * Format memories for injection
+   * Format memories for injection into Claude's context
    * @param {Object[]} memories
    * @param {Object} options
+   * @param {string} options.format - 'xml', 'markdown', or 'plain'
+   * @param {boolean} options.includeSourceInfo - Include source attribution
    * @returns {string}
    */
   formatForInjection(memories, options = {}) {
@@ -349,21 +344,23 @@ class QueryOrchestrator {
 
     const format = options.format || 'xml';
 
-    if (format === 'xml') {
-      return this._formatAsXML(memories);
-    } else if (format === 'markdown') {
-      return this._formatAsMarkdown(memories);
-    } else {
-      return this._formatAsPlain(memories);
+    switch (format) {
+      case 'xml':
+        return this._formatAsXML(memories, options);
+      case 'markdown':
+        return this._formatAsMarkdown(memories, options);
+      default:
+        return this._formatAsPlain(memories, options);
     }
   }
 
   /**
-   * Format memories as XML
+   * Format memories as XML (default, best for Claude)
    * @param {Object[]} memories
+   * @param {Object} options
    * @returns {string}
    */
-  _formatAsXML(memories) {
+  _formatAsXML(memories, options = {}) {
     const lines = ['<relevant-memories>'];
 
     // Group by type
@@ -377,7 +374,14 @@ class QueryOrchestrator {
     for (const [type, typeMemories] of Object.entries(byType)) {
       lines.push(`  <${type}-memories>`);
       for (const memory of typeMemories) {
-        lines.push(`    <memory relevance="${(memory.relevanceScore * 100).toFixed(0)}%">`);
+        const relevance = memory.relevanceScore
+          ? `relevance="${(memory.relevanceScore * 100).toFixed(0)}%"`
+          : '';
+        const source = options.includeSourceInfo && memory._source
+          ? ` source="${memory._source}"`
+          : '';
+
+        lines.push(`    <memory ${relevance}${source}>`);
         if (memory.summary) {
           lines.push(`      <summary>${this._escapeXML(memory.summary)}</summary>`);
         }
@@ -399,9 +403,10 @@ class QueryOrchestrator {
   /**
    * Format memories as Markdown
    * @param {Object[]} memories
+   * @param {Object} options
    * @returns {string}
    */
-  _formatAsMarkdown(memories) {
+  _formatAsMarkdown(memories, options = {}) {
     const lines = ['## Relevant Memories\n'];
 
     // Group by type
@@ -415,8 +420,14 @@ class QueryOrchestrator {
     for (const [type, typeMemories] of Object.entries(byType)) {
       lines.push(`### ${this._titleCase(type)}\n`);
       for (const memory of typeMemories) {
-        const relevance = (memory.relevanceScore * 100).toFixed(0);
-        lines.push(`- **[${relevance}% relevant]** ${memory.summary || memory.content}`);
+        const relevance = memory.relevanceScore
+          ? `**[${(memory.relevanceScore * 100).toFixed(0)}%]**`
+          : '';
+        const source = options.includeSourceInfo && memory._source
+          ? ` *(from ${memory._source})*`
+          : '';
+
+        lines.push(`- ${relevance} ${memory.summary || memory.content}${source}`);
         if (memory.tags?.length) {
           lines.push(`  - Tags: ${memory.tags.join(', ')}`);
         }
@@ -430,11 +441,17 @@ class QueryOrchestrator {
   /**
    * Format memories as plain text
    * @param {Object[]} memories
+   * @param {Object} options
    * @returns {string}
    */
-  _formatAsPlain(memories) {
+  _formatAsPlain(memories, options = {}) {
     return memories
-      .map(m => `[${m.type || 'memory'}] ${m.summary || m.content}`)
+      .map(m => {
+        const source = options.includeSourceInfo && m._source
+          ? ` (${m._source})`
+          : '';
+        return `[${m.type || 'memory'}]${source} ${m.summary || m.content}`;
+      })
       .join('\n');
   }
 
@@ -444,6 +461,7 @@ class QueryOrchestrator {
    * @returns {string}
    */
   _escapeXML(str) {
+    if (!str) return '';
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -463,39 +481,82 @@ class QueryOrchestrator {
       .replace(/\b\w/g, c => c.toUpperCase());
   }
 
+  // ===========================================================================
+  // STATISTICS AND DIAGNOSTICS
+  // ===========================================================================
+
   /**
-   * Get statistics about memory sources
+   * Get statistics about all memory sources/adapters
    * @returns {Promise<Object>}
    */
   async getSourceStats() {
-    const stats = {};
+    return await this.registry.getAllStats();
+  }
 
-    for (const [name, source] of Object.entries(MEMORY_SOURCES)) {
-      if (name === 'project') continue; // Skip project (requires hash)
+  /**
+   * Get detailed adapter information
+   * @returns {Object[]}
+   */
+  getAdapterInfo() {
+    return this.registry.getAll().map(adapter => ({
+      name: adapter.name,
+      priority: adapter.priority,
+      timeout: adapter.timeout,
+      enabled: adapter.enabled,
+    }));
+  }
 
-      const store = this._getStore(name);
-      if (!store) continue;
+  /**
+   * Enable or disable a specific adapter
+   * @param {string} name - Adapter name
+   * @param {boolean} enabled
+   */
+  setAdapterEnabled(name, enabled) {
+    this.registry.setEnabled(name, enabled);
+  }
 
-      try {
-        if (!store.loaded) {
-          await store.load();
-        }
-        stats[name] = {
-          name: source.name,
-          count: store.getAll().length,
-          priority: source.priority,
-        };
-      } catch {
-        stats[name] = {
-          name: source.name,
-          count: 0,
-          priority: source.priority,
-          error: true,
-        };
-      }
-    }
+  /**
+   * Clear all caches across all adapters
+   */
+  clearAllCaches() {
+    this.registry.clearAllCaches();
+    this.contextAnalyzer.clearCache();
+  }
 
-    return stats;
+  /**
+   * Record feedback for auto-learning
+   * Call this when user selects/uses a memory from results
+   * @param {string} query - Original query
+   * @param {Object} selectedMemory - Memory the user found useful
+   * @param {Object} context - Query context (from query result)
+   */
+  recordFeedback(query, selectedMemory, context) {
+    this.contextAnalyzer.recordFeedback(query, selectedMemory, context);
+  }
+
+  /**
+   * Get semantic analysis statistics
+   * @returns {Object|null}
+   */
+  getSemanticStats() {
+    return this.contextAnalyzer.getSemanticStats();
+  }
+
+  /**
+   * Check if semantic analysis is enabled
+   * @returns {boolean}
+   */
+  isSemanticEnabled() {
+    return this._semanticEnabled;
+  }
+
+  /**
+   * Get a specific adapter by name
+   * @param {string} name
+   * @returns {BaseAdapter|null}
+   */
+  getAdapter(name) {
+    return this.registry.get(name);
   }
 }
 
@@ -505,5 +566,4 @@ class QueryOrchestrator {
 
 module.exports = {
   QueryOrchestrator,
-  MEMORY_SOURCES,
 };

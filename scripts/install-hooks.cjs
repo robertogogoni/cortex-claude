@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * CMO Hook Installer
- * Registers CMO hooks in Claude Code settings
+ * Cortex Hook Installer
+ * Registers Cortex hooks in Claude Code settings
  */
 
 'use strict';
@@ -10,10 +10,10 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const CMO_DIR = process.env.CMO_DIR || path.join(os.homedir(), '.claude', 'memory');
+const CORTEX_DIR = process.env.CORTEX_DIR || path.join(os.homedir(), '.claude', 'memory');
 const SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json');
 
-console.log('Installing CMO hooks...');
+console.log('Installing Cortex hooks...');
 
 // Read existing settings
 let settings = {};
@@ -29,18 +29,18 @@ if (!settings.hooks) {
     settings.hooks = {};
 }
 
-// Define CMO hooks
+// Define Cortex hooks
 const sessionStartHook = {
     hooks: [{
         type: "command",
-        command: `node ${CMO_DIR}/hooks/session-start.cjs`
+        command: `node ${CORTEX_DIR}/hooks/session-start.cjs`
     }]
 };
 
 const sessionEndHook = {
     hooks: [{
         type: "command",
-        command: `node ${CMO_DIR}/hooks/session-end.cjs`
+        command: `node ${CORTEX_DIR}/hooks/session-end.cjs`
     }]
 };
 
@@ -48,7 +48,7 @@ const sessionEndHook = {
 if (!settings.hooks.SessionStart) {
     settings.hooks.SessionStart = [];
 }
-// Remove any existing CMO hooks first
+// Remove any existing Cortex hooks first
 settings.hooks.SessionStart = settings.hooks.SessionStart.filter(h =>
     !h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-start'))
 );
@@ -58,7 +58,7 @@ settings.hooks.SessionStart.push(sessionStartHook);
 if (!settings.hooks.SessionEnd) {
     settings.hooks.SessionEnd = [];
 }
-// Remove any existing CMO hooks first
+// Remove any existing Cortex hooks first
 settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(h =>
     !h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-end'))
 );
@@ -70,4 +70,4 @@ fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 console.log('✅ SessionStart hook registered');
 console.log('✅ SessionEnd hook registered');
 console.log('');
-console.log('CMO hooks installed! Restart Claude Code for changes to take effect.');
+console.log('Cortex hooks installed! Restart Claude Code for changes to take effect.');

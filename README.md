@@ -1,4 +1,4 @@
-# Claude Memory Orchestrator (CMO)
+# Cortex - Claude's Cognitive Layer (Cortex)
 
 [![Tests](https://img.shields.io/badge/tests-90%2F90%20passing-brightgreen)]()
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)]()
@@ -6,11 +6,11 @@
 
 **A 100% persistent memory system for Claude Code** that achieves true cross-session memory through auto-extraction, auto-recall, and compounding learnings.
 
-## Why CMO?
+## Why Cortex?
 
-Claude Code is powerful, but it forgets everything between sessions. CMO solves this by:
+Claude Code is powerful, but it forgets everything between sessions. Cortex solves this by:
 
-| Problem | CMO Solution |
+| Problem | Cortex Solution |
 |---------|--------------|
 | Claude forgets context | **Auto-recall**: Injects relevant memories at session start |
 | Learnings are lost | **Auto-extraction**: Captures insights from every session |
@@ -19,7 +19,7 @@ Claude Code is powerful, but it forgets everything between sessions. CMO solves 
 
 ## LADS Principles
 
-CMO follows the **LADS** framework for continuous improvement:
+Cortex follows the **LADS** framework for continuous improvement:
 
 - **L**earnable: Tracks every decision and its outcome
 - **A**daptive: Automatically tunes configuration based on what works
@@ -93,7 +93,7 @@ cd ~/.claude/memory && ./install.sh
    }
    ```
 
-3. **Start a new Claude Code session** - CMO is now active!
+3. **Start a new Claude Code session** - Cortex is now active!
 
 ## How It Works
 
@@ -125,7 +125,7 @@ Over time, the system learns:
 
 ## Configuration
 
-CMO is highly configurable via `~/.claude/memory/data/configs/current.json`:
+Cortex is highly configurable via `~/.claude/memory/data/configs/current.json`:
 
 ```json
 {
@@ -153,7 +153,7 @@ CMO is highly configurable via `~/.claude/memory/data/configs/current.json`:
 
 ## Data Storage
 
-CMO uses JSONL (JSON Lines) format for efficient append-only storage:
+Cortex uses JSONL (JSON Lines) format for efficient append-only storage:
 
 ```
 ~/.claude/memory/

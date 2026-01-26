@@ -1,0 +1,129 @@
+{
+  "entries": {
+    "88b35cf04283308062feffc06b8cc880": {
+      "timestamp": 1769454297920,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "debugging",
+          "confidence": 0.9,
+          "description": "Query appears to be about debugging"
+        },
+        "keywords": {
+          "required": [
+            "debug",
+            "error",
+            "authentication"
+          ],
+          "optional": [],
+          "excluded": []
+        },
+        "concepts": [
+          "debug",
+          "error",
+          "authentication"
+        ],
+        "matchStrategy": {
+          "primary": "keyword",
+          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+        },
+        "source": "fallback",
+        "memoryLimit": 15
+      }
+    },
+    "13a5848857dfb7761f82307d83bb11bc": {
+      "timestamp": 1769454297937,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "configuration",
+          "confidence": 0.65,
+          "description": "Query appears to be about configuration"
+        },
+        "keywords": {
+          "required": [
+            "filesystemwatcher",
+            "powershell",
+            "configuration"
+          ],
+          "optional": [],
+          "excluded": []
+        },
+        "concepts": [
+          "filesystemwatcher",
+          "powershell",
+          "configuration"
+        ],
+        "matchStrategy": {
+          "primary": "keyword",
+          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+        },
+        "source": "fallback",
+        "memoryLimit": 5
+      }
+    },
+    "640b41d6f001291798e77d86b6d95895": {
+      "timestamp": 1769454297952,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "general",
+          "confidence": 0.5,
+          "description": "Query appears to be about general"
+        },
+        "keywords": {
+          "required": [
+            "filesystemwatcher",
+            "powershell"
+          ],
+          "optional": [],
+          "excluded": []
+        },
+        "concepts": [
+          "filesystemwatcher",
+          "powershell"
+        ],
+        "matchStrategy": {
+          "primary": "keyword",
+          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+        },
+        "source": "fallback",
+        "memoryLimit": 5
+      }
+    },
+    "e5080699f89e05e1c77afb63f846c082": {
+      "timestamp": 1769454480739,
+      "result": {
+        "complexity": "complex",
+        "intent": {
+          "primary": "configuration",
+          "confidence": 0.8,
+          "description": "Query appears to be about configuration"
+        },
+        "keywords": {
+          "required": [
+            "how",
+            "configure",
+            "git",
+            "hooks",
+            "automatic"
+          ],
+          "optional": [],
+          "excluded": []
+        },
+        "concepts": [
+          "how",
+          "configure",
+          "git"
+        ],
+        "matchStrategy": {
+          "primary": "keyword",
+          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+        },
+        "source": "fallback",
+        "memoryLimit": 30
+      }
+    }
+  },
+  "lastCleanup": 1769454297920
+}

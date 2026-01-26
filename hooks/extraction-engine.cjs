@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Extraction Engine
+ * Cortex - Claude's Cognitive Layer - Extraction Engine
  *
  * Analyzes conversations to extract valuable memories:
  * - Skills: Procedural knowledge (commands, workflows, patterns)

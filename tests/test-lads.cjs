@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Memory Orchestrator - LADS Tests
+ * Cortex - Claude's Cognitive Layer - LADS Tests
  *
  * Tests for LADS (Learnable, Adaptive, Documenting, Self-improving) components:
  * - Pattern Tracker
@@ -471,7 +471,7 @@ async function testLADSCore() {
 
 async function main() {
   console.log('╔════════════════════════════════════════╗');
-  console.log('║   CMO LADS Tests                       ║');
+  console.log('║   Cortex LADS Tests                       ║');
   console.log('╚════════════════════════════════════════╝');
 
   setup();

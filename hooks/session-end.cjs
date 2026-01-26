@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Claude Memory Orchestrator - SessionEnd Hook
+ * Cortex - Claude's Cognitive Layer - SessionEnd Hook
  *
  * This hook runs at the end of each Claude Code session.
  * It extracts learnings and resolves pending decisions.
  *
  * Environment variables:
- * - CMO_WORKING_DIR: Current working directory
- * - CMO_SESSION_ID: Current session ID
- * - CMO_TRANSCRIPT_PATH: Path to conversation transcript
+ * - CORTEX_WORKING_DIR: Current working directory
+ * - CORTEX_SESSION_ID: Current session ID
+ * - CORTEX_TRANSCRIPT_PATH: Path to conversation transcript
  *
  * Input: Conversation transcript via stdin or file
  * Output: JSON with extraction results
@@ -48,7 +48,7 @@ try {
 class SessionEndHook {
   /**
    * @param {Object} options
-   * @param {string} options.basePath - Base path for CMO
+   * @param {string} options.basePath - Base path for Cortex
    * @param {Object} options.config - Configuration manager
    */
   constructor(options = {}) {
@@ -62,7 +62,7 @@ class SessionEndHook {
     });
 
     this.contextAnalyzer = new ContextAnalyzer({
-      workingDir: process.env.CMO_WORKING_DIR || process.cwd(),
+      workingDir: process.env.CORTEX_WORKING_DIR || process.cwd(),
     });
 
     this.lads = null;
@@ -81,8 +81,8 @@ class SessionEndHook {
    */
   async execute(input = {}) {
     const startTime = Date.now();
-    const sessionId = process.env.CMO_SESSION_ID || generateId();
-    const workingDir = process.env.CMO_WORKING_DIR || process.cwd();
+    const sessionId = process.env.CORTEX_SESSION_ID || generateId();
+    const workingDir = process.env.CORTEX_WORKING_DIR || process.cwd();
 
     // Check if enabled
     if (!this.config.get('sessionEnd.enabled')) {
@@ -168,7 +168,7 @@ class SessionEndHook {
    */
   async _loadMessages() {
     // Try transcript file first
-    const transcriptPath = process.env.CMO_TRANSCRIPT_PATH;
+    const transcriptPath = process.env.CORTEX_TRANSCRIPT_PATH;
     if (transcriptPath && fs.existsSync(transcriptPath)) {
       try {
         const content = fs.readFileSync(transcriptPath, 'utf8');

@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Outcome Scorer
+ * Cortex - Claude's Cognitive Layer - Outcome Scorer
  *
  * LADS Principle: Adaptive
  * Collects signals and determines if decisions were useful:

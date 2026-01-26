@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Claude Memory Orchestrator - Hooks Tests
+ * Cortex - Claude's Cognitive Layer - Hooks Tests
  *
  * Tests for hook components:
  * - Context Analyzer
@@ -326,10 +326,10 @@ async function testSessionHooks() {
   let total = 0;
 
   // Set environment for testing
-  const origDir = process.env.CMO_WORKING_DIR;
-  const origSession = process.env.CMO_SESSION_ID;
-  process.env.CMO_WORKING_DIR = TEST_DIR;
-  process.env.CMO_SESSION_ID = 'test-hook-session';
+  const origDir = process.env.CORTEX_WORKING_DIR;
+  const origSession = process.env.CORTEX_SESSION_ID;
+  process.env.CORTEX_WORKING_DIR = TEST_DIR;
+  process.env.CORTEX_SESSION_ID = 'test-hook-session';
 
   try {
     // Test SessionStartHook
@@ -391,14 +391,14 @@ async function testSessionHooks() {
   } finally {
     // Restore environment
     if (origDir !== undefined) {
-      process.env.CMO_WORKING_DIR = origDir;
+      process.env.CORTEX_WORKING_DIR = origDir;
     } else {
-      delete process.env.CMO_WORKING_DIR;
+      delete process.env.CORTEX_WORKING_DIR;
     }
     if (origSession !== undefined) {
-      process.env.CMO_SESSION_ID = origSession;
+      process.env.CORTEX_SESSION_ID = origSession;
     } else {
-      delete process.env.CMO_SESSION_ID;
+      delete process.env.CORTEX_SESSION_ID;
     }
   }
 
@@ -411,7 +411,7 @@ async function testSessionHooks() {
 
 async function main() {
   console.log('╔════════════════════════════════════════╗');
-  console.log('║   CMO Hooks Tests                      ║');
+  console.log('║   Cortex Hooks Tests                      ║');
   console.log('╚════════════════════════════════════════╝');
 
   setup();

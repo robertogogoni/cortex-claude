@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Error Handler
+ * Cortex - Claude's Cognitive Layer - Error Handler
  *
  * Comprehensive error handling with:
  * - Circuit breaker pattern (prevent cascade failures)

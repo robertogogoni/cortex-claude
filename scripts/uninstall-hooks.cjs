@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * CMO Hook Uninstaller
- * Removes CMO hooks from Claude Code settings
+ * Cortex Hook Uninstaller
+ * Removes Cortex hooks from Claude Code settings
  */
 
 'use strict';
@@ -12,7 +12,7 @@ const os = require('os');
 
 const SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json');
 
-console.log('Uninstalling CMO hooks...');
+console.log('Uninstalling Cortex hooks...');
 
 // Read existing settings
 let settings = {};
@@ -29,7 +29,7 @@ if (!settings.hooks) {
     process.exit(0);
 }
 
-// Remove CMO SessionStart hooks
+// Remove Cortex SessionStart hooks
 if (settings.hooks.SessionStart) {
     const before = settings.hooks.SessionStart.length;
     settings.hooks.SessionStart = settings.hooks.SessionStart.filter(h =>
@@ -45,7 +45,7 @@ if (settings.hooks.SessionStart) {
     }
 }
 
-// Remove CMO SessionEnd hooks
+// Remove Cortex SessionEnd hooks
 if (settings.hooks.SessionEnd) {
     const before = settings.hooks.SessionEnd.length;
     settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(h =>
@@ -70,4 +70,4 @@ if (Object.keys(settings.hooks).length === 0) {
 fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 
 console.log('');
-console.log('CMO hooks uninstalled. Restart Claude Code for changes to take effect.');
+console.log('Cortex hooks uninstalled. Restart Claude Code for changes to take effect.');

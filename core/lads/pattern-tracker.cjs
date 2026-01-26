@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Pattern Tracker
+ * Cortex - Claude's Cognitive Layer - Pattern Tracker
  *
  * LADS Principle: Learnable
  * Tracks every decision for learning:

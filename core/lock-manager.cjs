@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Lock Manager
+ * Cortex - Claude's Cognitive Layer - Lock Manager
  *
  * File-based locking for cross-session concurrency:
  * - Lock files with TTL (auto-cleanup on crash)

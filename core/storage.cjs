@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Storage Layer
+ * Cortex - Claude's Cognitive Layer - Storage Layer
  *
  * JSONL-based persistent storage with:
  * - Atomic writes (temp file + rename pattern)
@@ -98,7 +98,7 @@ class JSONLStore {
         corrupted++;
         this.stats.errors++;
         // Log corrupted line but continue
-        console.error(`[CMO Storage] Corrupted line ${i + 1}: ${e.message}`);
+        console.error(`[Cortex Storage] Corrupted line ${i + 1}: ${e.message}`);
       }
     }
 

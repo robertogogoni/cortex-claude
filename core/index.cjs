@@ -1,7 +1,7 @@
 /**
- * Claude Memory Orchestrator - Core Index
+ * Cortex - Claude's Cognitive Layer - Core Index
  *
- * Main entry point for CMO core functionality.
+ * Main entry point for Cortex core functionality.
  * Initializes and exports all core components.
  */
 
@@ -35,7 +35,7 @@ const {
 } = require('./lads/index.cjs');
 
 // =============================================================================
-// CMO CORE
+// Cortex CORE
 // =============================================================================
 
 class CMOCore {
@@ -162,7 +162,7 @@ class CMOCore {
 
       this.initialized = true;
 
-      console.log('[CMO] Core initialized successfully');
+      console.log('[Cortex] Core initialized successfully');
 
       return {
         success: results.config.success && results.storage.success && results.lads.success,
@@ -187,7 +187,7 @@ class CMOCore {
    * @returns {Promise<void>}
    */
   async shutdown() {
-    console.log('[CMO] Shutting down...');
+    console.log('[Cortex] Shutting down...');
 
     // Flush pending writes
     if (this._writeQueue) {
@@ -200,7 +200,7 @@ class CMOCore {
     }
 
     this.initialized = false;
-    console.log('[CMO] Shutdown complete');
+    console.log('[Cortex] Shutdown complete');
   }
 
   /**

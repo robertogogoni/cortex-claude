@@ -1,7 +1,7 @@
 /**
- * Claude Memory Orchestrator - Hooks Index
+ * Cortex - Claude's Cognitive Layer - Hooks Index
  *
- * Entry point for CMO hooks that integrate with Claude Code:
+ * Entry point for Cortex hooks that integrate with Claude Code:
  * - SessionStart: Injects relevant memories at session beginning
  * - SessionEnd: Extracts learnings when session ends
  *
@@ -13,8 +13,9 @@
 const { SessionStartHook } = require('./session-start.cjs');
 const { SessionEndHook } = require('./session-end.cjs');
 const { ContextAnalyzer, INTENT_PATTERNS, FILE_DOMAINS } = require('./context-analyzer.cjs');
-const { QueryOrchestrator, MEMORY_SOURCES } = require('./query-orchestrator.cjs');
+const { QueryOrchestrator } = require('./query-orchestrator.cjs');
 const { ExtractionEngine, EXTRACTION_PATTERNS, QUALITY_SIGNALS } = require('./extraction-engine.cjs');
+const { ProgressDisplay, InjectionFormatter, ICONS, TYPE_LABELS, SOURCE_LABELS } = require('./injection-formatter.cjs');
 
 // =============================================================================
 // HOOK RUNNER
@@ -67,10 +68,16 @@ module.exports = {
 
   // Query Orchestration
   QueryOrchestrator,
-  MEMORY_SOURCES,
 
   // Extraction
   ExtractionEngine,
   EXTRACTION_PATTERNS,
   QUALITY_SIGNALS,
+
+  // UX Display
+  ProgressDisplay,
+  InjectionFormatter,
+  ICONS,
+  TYPE_LABELS,
+  SOURCE_LABELS,
 };

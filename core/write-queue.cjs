@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Write Queue
+ * Cortex - Claude's Cognitive Layer - Write Queue
  *
  * Batched atomic writes with:
  * - Operation batching by resource
@@ -345,7 +345,7 @@ class WriteQueue {
 }
 
 // =============================================================================
-// MEMORY WRITE QUEUE (Specialized for CMO)
+// MEMORY WRITE QUEUE (Specialized for Cortex)
 // =============================================================================
 
 class MemoryWriteQueue extends WriteQueue {

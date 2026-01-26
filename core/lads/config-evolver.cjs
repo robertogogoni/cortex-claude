@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - Config Evolver
+ * Cortex - Claude's Cognitive Layer - Config Evolver
  *
  * LADS Principle: Self-improving
  * Evolves configuration based on patterns:

@@ -1,5 +1,5 @@
 /**
- * Claude Memory Orchestrator - LADS Index
+ * Cortex - Claude's Cognitive Layer - LADS Index
  *
  * Entry point for LADS (Learnable, Adaptive, Documenting, Self-improving) components.
  * Exports all LADS modules and provides factory functions for creating
