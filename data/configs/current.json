@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "sessionStart": {
+    "enabled": true,
+    "timeoutMs": 2000,
+    "caching": {
+      "enabled": true,
+      "ttlMs": 3600000
+    },
+    "slots": {
+      "maxTotal": 8,
+      "maxTokens": 2000,
+      "perCategory": {
+        "solution": 3,
+        "pattern": 2,
+        "preference": 2,
+        "skill": 1
+      }
+    }
+  },
+  "sessionEnd": {
+    "enabled": true,
+    "minSessionLength": 3,
+    "extractionThreshold": 0.7,
+    "confirmUncertain": false
+  },
+  "queryOrchestrator": {
+    "defaultTimeout": 500,
+    "parallelism": 4,
+    "sources": [
+      {
+        "name": "memory-store",
+        "priority": 1,
+        "timeout": 100,
+        "enabled": true
+      },
+      {
+        "name": "episodic-memory",
+        "priority": 0.9,
+        "timeout": 300,
+        "enabled": true
+      },
+      {
+        "name": "knowledge-graph",
+        "priority": 0.8,
+        "timeout": 200,
+        "enabled": true
+      },
+      {
+        "name": "pattern-store",
+        "priority": 0.7,
+        "timeout": 50,
+        "enabled": true
+      }
+    ]
+  },
+  "contextAnalyzer": {
+    "useAI": true,
+    "aiModel": "claude-3-haiku-20240307",
+    "minConfidence": 0.3
+  },
+  "ladsCore": {
+    "evolution": {
+      "enabled": true,
+      "minIntervalMs": 3600000,
+      "minSamples": 20,
+      "maxChangePercent": 0.25
+    },
+    "patterns": {
+      "detectionEnabled": true,
+      "failureThreshold": 0.6
+    },
+    "documentation": {
+      "enabled": true,
+      "changelogPath": "docs/changelog.md"
+    }
+  },
+  "storage": {
+    "basePath": "~/.claude/memory",
+    "maxSizeMB": 100,
+    "retentionDays": 365
+  },
+  "errorHandling": {
+    "circuitBreaker": {
+      "threshold": 5,
+      "resetTimeoutMs": 30000
+    },
+    "retry": {
+      "maxAttempts": 3,
+      "initialDelayMs": 100,
+      "maxDelayMs": 5000,
+      "backoffMultiplier": 2
+    }
+  }
+}
