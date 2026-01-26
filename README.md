@@ -1,57 +1,81 @@
-# Cortex - Claude's Cognitive Layer (Cortex)
+# Cortex - Claude's Cognitive Layer
 
 [![Tests](https://img.shields.io/badge/tests-90%2F90%20passing-brightgreen)]()
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)]()
+[![MCP](https://img.shields.io/badge/MCP-6%20tools-purple)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
-**A 100% persistent memory system for Claude Code** that achieves true cross-session memory through auto-extraction, auto-recall, and compounding learnings.
+**A dual-model cognitive layer for Claude Code** that provides true cross-session memory through auto-extraction, auto-recall, MCP tools for deep reasoning, and compounding learnings.
 
 ## Why Cortex?
 
-Claude Code is powerful, but it forgets everything between sessions. Cortex solves this by:
+Claude Code is powerful, but it forgets everything between sessions. Cortex solves this with a dual-model architecture:
 
 | Problem | Cortex Solution |
-|---------|--------------|
+|---------|-----------------|
 | Claude forgets context | **Auto-recall**: Injects relevant memories at session start |
 | Learnings are lost | **Auto-extraction**: Captures insights from every session |
-| No learning from mistakes | **LADS principles**: System gets smarter over time |
+| No deep reasoning tools | **MCP Server**: 6 tools for query, recall, reflect, infer, learn, consolidate |
+| Expensive API calls | **Dual-model**: Haiku for fast ops (~$0.25/1M), Sonnet for deep reasoning (~$3/1M) |
 | Manual memory management | **Fully automatic**: Zero user intervention required |
-
-## LADS Principles
-
-Cortex follows the **LADS** framework for continuous improvement:
-
-- **L**earnable: Tracks every decision and its outcome
-- **A**daptive: Automatically tunes configuration based on what works
-- **D**ocumenting: Generates its own usage documentation
-- **S**elf-improving: Pattern detection identifies what helps vs. hurts
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Claude Code Session                       │
-├─────────────────────────────────────────────────────────────┤
-│  SessionStart Hook          │         SessionEnd Hook        │
-│  ┌─────────────────────┐    │    ┌─────────────────────┐    │
-│  │ Context Analyzer    │    │    │ Extraction Engine   │    │
-│  │ Query Orchestrator  │    │    │ Pattern Tracker     │    │
-│  │ Memory Injection    │    │    │ Outcome Scorer      │    │
-│  └─────────────────────┘    │    └─────────────────────┘    │
-├─────────────────────────────────────────────────────────────┤
-│                       Core Infrastructure                    │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
-│  │ JSONL    │ │ Lock     │ │ Write    │ │ Error        │   │
-│  │ Storage  │ │ Manager  │ │ Queue    │ │ Handler      │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
-├─────────────────────────────────────────────────────────────┤
-│                        LADS Layer                            │
-│  ┌──────────────┐ ┌──────────────┐ ┌────────────────────┐  │
-│  │ Config       │ │ Pattern      │ │ Docs               │  │
-│  │ Evolver      │ │ Tracker      │ │ Writer             │  │
-│  └──────────────┘ └──────────────┘ └────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Claude Code Session                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                           Cortex MCP Server                              │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────┐ │
+│  │     Haiku Worker            │    │      Sonnet Thinker             │ │
+│  │     (Fast, Cheap)           │    │      (Deep Reasoning)           │ │
+│  │  • cortex__query            │    │  • cortex__reflect              │ │
+│  │  • cortex__recall           │    │  • cortex__infer                │ │
+│  │     ~$0.25/1M tokens        │    │  • cortex__learn                │ │
+│  │                             │    │  • cortex__consolidate          │ │
+│  │                             │    │     ~$3/1M tokens               │ │
+│  └─────────────────────────────┘    └─────────────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────────────┤
+│  SessionStart Hook          │         SessionEnd Hook                    │
+│  ┌─────────────────────┐    │    ┌─────────────────────┐                │
+│  │ Context Analyzer    │    │    │ Extraction Engine   │                │
+│  │ Query Orchestrator  │    │    │ Pattern Tracker     │                │
+│  │ Memory Injection    │    │    │ Outcome Scorer      │                │
+│  └─────────────────────┘    │    └─────────────────────┘                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                       Core Infrastructure                                │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐               │
+│  │ JSONL    │ │ Lock     │ │ Write    │ │ Error        │               │
+│  │ Storage  │ │ Manager  │ │ Queue    │ │ Handler      │               │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                        LADS Layer                                        │
+│  ┌──────────────┐ ┌──────────────┐ ┌────────────────────┐              │
+│  │ Config       │ │ Pattern      │ │ Docs               │              │
+│  │ Evolver      │ │ Tracker      │ │ Writer             │              │
+│  └──────────────┘ └──────────────┘ └────────────────────┘              │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
+
+## MCP Tools
+
+Cortex exposes 6 MCP tools via its server:
+
+### Haiku-Powered (Fast, ~$0.25/1M tokens)
+
+| Tool | Description |
+|------|-------------|
+| `cortex__query` | Search all memory sources with intelligent keyword extraction and ranking |
+| `cortex__recall` | Context-aware memory retrieval with relevance filtering |
+
+### Sonnet-Powered (Deep Reasoning, ~$3/1M tokens)
+
+| Tool | Description |
+|------|-------------|
+| `cortex__reflect` | Meta-cognitive analysis with quick/moderate/deep depth options |
+| `cortex__infer` | Find non-obvious connections between concepts |
+| `cortex__learn` | Extract, analyze, and store insights with quality gating |
+| `cortex__consolidate` | Merge duplicates, remove outdated, reorganize memories |
 
 ## Quick Start
 
@@ -59,41 +83,52 @@ Cortex follows the **LADS** framework for continuous improvement:
 
 ```bash
 # Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/robertogogoni/claude-memory-orchestrator/main/install.sh | bash
-
-# Or clone and install manually
-git clone https://github.com/robertogogoni/claude-memory-orchestrator.git ~/.claude/memory
-cd ~/.claude/memory && ./install.sh
+git clone https://github.com/robertogogoni/cortex-claude.git ~/.claude/memory
+cd ~/.claude/memory && npm install
 ```
 
-### Manual Installation
+### Register MCP Server
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/robertogogoni/claude-memory-orchestrator.git ~/.claude/memory
-   ```
+Add to `~/.claude.json`:
 
-2. **Register the hooks** in `~/.claude/settings.json`:
-   ```json
-   {
-     "hooks": {
-       "SessionStart": [{
-         "hooks": [{
-           "type": "command",
-           "command": "node ~/.claude/memory/hooks/session-start.cjs"
-         }]
-       }],
-       "SessionEnd": [{
-         "hooks": [{
-           "type": "command",
-           "command": "node ~/.claude/memory/hooks/session-end.cjs"
-         }]
-       }]
-     }
-   }
-   ```
+```json
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "node",
+      "args": ["/home/YOUR_USER/.claude/memory/cortex/server.cjs"],
+      "env": {}
+    }
+  }
+}
+```
 
-3. **Start a new Claude Code session** - Cortex is now active!
+### Register Session Hooks
+
+Add to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "node ~/.claude/memory/hooks/session-start.cjs"
+      }]
+    }],
+    "SessionEnd": [{
+      "hooks": [{
+        "type": "command",
+        "command": "node ~/.claude/memory/hooks/session-end.cjs"
+      }]
+    }]
+  }
+}
+```
+
+### Restart Claude Code
+
+The Cortex MCP tools and session hooks are now active!
 
 ## How It Works
 
@@ -115,6 +150,21 @@ When a session ends:
 3. **Outcome Tracking**: Links decisions to their outcomes
 4. **Storage**: Persists high-quality memories for future sessions
 
+### MCP Tools (On-Demand)
+
+Use Cortex tools directly in Claude Code:
+
+```
+# Search memories
+Use cortex__query with query "debugging authentication"
+
+# Deep reflection on current approach
+Use cortex__reflect with topic "my debugging strategy" and depth "deep"
+
+# Store a learning
+Use cortex__learn with insight "Always check token expiry first"
+```
+
 ### LADS Learning Loop
 
 Over time, the system learns:
@@ -123,13 +173,22 @@ Over time, the system learns:
 - Which decisions lead to good outcomes (and suggests similar approaches)
 - What patterns indicate problems (and warns proactively)
 
+## LADS Principles
+
+Cortex follows the **LADS** framework for continuous improvement:
+
+- **L**earnable: Tracks every decision and its outcome
+- **A**daptive: Automatically tunes configuration based on what works
+- **D**ocumenting: Generates its own usage documentation
+- **S**elf-improving: Pattern detection identifies what helps vs. hurts
+
 ## Configuration
 
-Cortex is highly configurable via `~/.claude/memory/data/configs/current.json`:
+Cortex is configurable via `~/.claude/memory/data/configs/current.json`:
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "sessionStart": {
     "slots": {
       "maxTotal": 5,
@@ -157,19 +216,86 @@ Cortex uses JSONL (JSON Lines) format for efficient append-only storage:
 
 ```
 ~/.claude/memory/
+├── cortex/                # MCP Server
+│   ├── server.cjs         # Main MCP entry point
+│   ├── haiku-worker.cjs   # Fast queries (Haiku)
+│   └── sonnet-thinker.cjs # Deep reasoning (Sonnet)
 ├── data/
 │   ├── memories/          # Extracted memories
 │   │   ├── skills.jsonl
 │   │   ├── working.jsonl
-│   │   └── patterns.jsonl
+│   │   ├── patterns.jsonl
+│   │   ├── learnings.jsonl
+│   │   └── insights.jsonl
 │   ├── patterns/          # Decision tracking
 │   │   ├── decisions.jsonl
 │   │   └── outcomes.jsonl
 │   └── configs/           # Configuration history
 │       ├── current.json
 │       └── history/
+├── hooks/                 # Session hooks
+├── core/                  # Core infrastructure
 ├── logs/                  # Debug logs
 └── .locks/                # File locks (auto-cleaned)
+```
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run individual test suites
+npm run test:core   # 34 tests - core infrastructure
+npm run test:hooks  # 25 tests - hook components
+npm run test:lads   # 31 tests - LADS components
+```
+
+**Current Status**: 90/90 tests passing
+
+## Troubleshooting
+
+### MCP Tools Not Available
+
+1. Check MCP server registration in `~/.claude.json`
+2. Test server manually: `node ~/.claude/memory/cortex/server.cjs`
+3. Restart Claude Code
+
+### Hooks Not Running
+
+1. Check hook registration:
+   ```bash
+   cat ~/.claude/settings.json | grep -A5 "SessionStart"
+   ```
+
+2. Test hooks manually:
+   ```bash
+   node ~/.claude/memory/hooks/session-start.cjs
+   node ~/.claude/memory/hooks/session-end.cjs
+   ```
+
+3. Check logs:
+   ```bash
+   cat ~/.claude/memory/logs/*.log
+   ```
+
+### Memory Not Being Injected
+
+1. Lower relevance threshold:
+   ```json
+   { "sessionStart": { "relevanceThreshold": 0.2 } }
+   ```
+
+2. Ensure memories exist:
+   ```bash
+   wc -l ~/.claude/memory/data/memories/*.jsonl
+   ```
+
+### Lock Errors
+
+Stale locks are auto-cleaned after TTL expires. To force cleanup:
+```bash
+rm -rf ~/.claude/memory/.locks/*
 ```
 
 ## API Reference
@@ -178,9 +304,6 @@ Cortex uses JSONL (JSON Lines) format for efficient append-only storage:
 
 ```javascript
 const {
-  // Main orchestrator
-  CMOCore, getCMO,
-
   // Storage
   JSONLStore, MemoryIndex, StorageManager,
 
@@ -207,94 +330,18 @@ const {
 } = require('./index.cjs');
 ```
 
-## Testing
+### Cortex MCP Classes
 
-```bash
-# Run all tests
-node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs
-
-# Run individual test suites
-node tests/test-core.cjs   # 34 tests - core infrastructure
-node tests/test-hooks.cjs  # 25 tests - hook components
-node tests/test-lads.cjs   # 31 tests - LADS components
-```
-
-**Current Status**: 90/90 tests passing ✅
-
-## Project Structure
-
-```
-~/.claude/memory/
-├── index.cjs              # Main entry point
-├── core/
-│   ├── types.cjs          # Types, utilities, defaults
-│   ├── storage.cjs        # JSONL storage engine
-│   ├── config.cjs         # Configuration management
-│   ├── lock-manager.cjs   # File-based locking
-│   ├── write-queue.cjs    # Batched write queue
-│   ├── error-handler.cjs  # Circuit breaker, retry, degradation
-│   └── lads/
-│       ├── pattern-tracker.cjs  # Decision tracking
-│       ├── outcome-scorer.cjs   # Outcome evaluation
-│       ├── config-evolver.cjs   # Auto-tuning
-│       └── docs-writer.cjs      # Self-documentation
-├── hooks/
-│   ├── session-start.cjs  # Session start hook
-│   ├── session-end.cjs    # Session end hook
-│   ├── context-analyzer.cjs    # Context analysis
-│   ├── query-orchestrator.cjs  # Memory retrieval
-│   └── extraction-engine.cjs   # Content extraction
-├── tests/
-│   ├── test-core.cjs      # Core tests
-│   ├── test-hooks.cjs     # Hook tests
-│   └── test-lads.cjs      # LADS tests
-└── data/                  # Runtime data (gitignored)
-```
-
-## Troubleshooting
-
-### Hooks Not Running
-
-1. Check hook registration:
-   ```bash
-   cat ~/.claude/settings.json | grep -A5 "SessionStart"
-   ```
-
-2. Test hooks manually:
-   ```bash
-   node ~/.claude/memory/hooks/session-start.cjs
-   node ~/.claude/memory/hooks/session-end.cjs
-   ```
-
-3. Check for errors in logs:
-   ```bash
-   cat ~/.claude/memory/logs/*.log
-   ```
-
-### Memory Not Being Injected
-
-1. Check relevance threshold (lower it to inject more):
-   ```json
-   { "sessionStart": { "relevanceThreshold": 0.2 } }
-   ```
-
-2. Ensure memories exist:
-   ```bash
-   wc -l ~/.claude/memory/data/memories/*.jsonl
-   ```
-
-### Lock Errors
-
-Stale locks are auto-cleaned after TTL expires. To force cleanup:
-```bash
-rm -rf ~/.claude/memory/.locks/*
+```javascript
+const { HaikuWorker } = require('./cortex/haiku-worker.cjs');
+const { SonnetThinker } = require('./cortex/sonnet-thinker.cjs');
 ```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Run tests: `node tests/test-*.cjs`
+3. Run tests: `npm test`
 4. Submit a pull request
 
 ## License
@@ -304,6 +351,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - Built for [Claude Code](https://claude.ai/code)
+- Uses [MCP SDK](https://github.com/modelcontextprotocol/sdk) for tool integration
 - Inspired by research on autonomous AI learning (Voyager, CASCADE, SEAgent)
 - LADS principles adapted from continuous improvement methodologies
 

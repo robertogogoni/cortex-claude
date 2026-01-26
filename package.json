@@ -1,7 +1,7 @@
 {
-  "name": "claude-memory-orchestrator",
-  "version": "1.0.0",
-  "description": "100% persistent memory system for Claude Code with auto-extraction, auto-recall, and compounding learnings",
+  "name": "cortex-claude",
+  "version": "2.0.0",
+  "description": "Claude's Cognitive Layer - Dual-model memory system with auto-extraction, auto-recall, and MCP tools for deep reasoning",
   "main": "index.cjs",
   "type": "commonjs",
   "scripts": {
@@ -11,29 +11,33 @@
     "test:lads": "node tests/test-lads.cjs",
     "install-hooks": "node scripts/install-hooks.cjs",
     "uninstall-hooks": "node scripts/uninstall-hooks.cjs",
-    "status": "node scripts/status.cjs"
+    "status": "node scripts/status.cjs",
+    "cortex": "node cortex/server.cjs"
   },
   "keywords": [
     "claude",
     "claude-code",
+    "cortex",
     "memory",
     "persistent-memory",
     "ai",
     "llm",
+    "mcp",
     "hooks",
     "learning",
-    "cross-session"
+    "cross-session",
+    "dual-model"
   ],
   "author": "Roberto Gogoni",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/robertogogoni/claude-memory-orchestrator.git"
+    "url": "git+https://github.com/robertogogoni/cortex-claude.git"
   },
   "bugs": {
-    "url": "https://github.com/robertogogoni/claude-memory-orchestrator/issues"
+    "url": "https://github.com/robertogogoni/cortex-claude/issues"
   },
-  "homepage": "https://github.com/robertogogoni/claude-memory-orchestrator#readme",
+  "homepage": "https://github.com/robertogogoni/cortex-claude#readme",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -41,12 +45,13 @@
     "index.cjs",
     "core/**/*.cjs",
     "hooks/**/*.cjs",
+    "cortex/**/*.cjs",
     "scripts/**/*.cjs",
     "README.md",
     "LICENSE"
   ],
   "bin": {
-    "cmo": "./scripts/cli.cjs"
+    "cortex": "./scripts/cli.cjs"
   },
   "directories": {
     "test": "tests"
