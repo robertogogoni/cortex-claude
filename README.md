@@ -57,6 +57,73 @@ Claude Code is powerful, but it forgets everything between sessions. Cortex solv
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+## User Experience
+
+### Understanding MCP Tools vs Slash Commands
+
+Cortex works at two levels:
+
+| Interface | How It Works | User Action |
+|-----------|--------------|-------------|
+| **MCP Tools** | Claude uses them automatically when relevant | Just ask naturally |
+| **Slash Commands** | User invokes explicitly with `/cortex` | Type `/cortex <command>` |
+
+**MCP Tools** are invisible to users - Claude decides when to use them. You might ask "What authentication approach did I use before?" and Claude will automatically call `cortex__query` behind the scenes.
+
+**Slash Commands** give you direct control via the `/cortex` skill (see below).
+
+### The `/cortex` Skill
+
+After installation, you can use these commands:
+
+```bash
+/cortex                    # Show status + help
+/cortex query "search"     # Search memories
+/cortex reflect "topic"    # Deep meta-cognitive analysis
+/cortex learn "insight"    # Store a new insight
+/cortex stats              # Memory counts, API costs
+/cortex consolidate        # Clean up memories
+```
+
+### Visual Feedback
+
+When Cortex processes, you'll see neural activity indicators:
+
+```
+╭──────────────────────────────────────╮
+│  🧠 CORTEX ═══════════════════════   │
+│     ·  ∿  ·  ∿  ·  ∿  ·             │
+│    ◇━━━◇━━━◇     ◆━━━◆━━━◆          │
+│     Haiku          Sonnet            │
+│     querying...                      │
+╰──────────────────────────────────────╯
+```
+
+- **◇ Diamonds** = Haiku (fast, cheap queries)
+- **◆ Filled Diamonds** = Sonnet (deep reasoning)
+
+### How to Know Cortex is Working
+
+1. **Check MCP Status**: Run `claude mcp list` - look for `cortex: ✓ Connected`
+2. **Use `/cortex status`**: Shows memory counts and last activity
+3. **Session Start**: The hook injects relevant memories (check logs)
+4. **Session End**: Learnings are extracted automatically
+
+### Verifying Activity
+
+```bash
+# Check if memories exist
+wc -l ~/.claude/memory/data/memories/*.jsonl
+
+# View recent logs
+tail -20 ~/.claude/memory/logs/*.log
+
+# Test MCP server directly
+timeout 3 node ~/.claude/memory/cortex/server.cjs
+```
+
+---
+
 ## MCP Tools
 
 Cortex exposes 6 MCP tools via its server:
@@ -126,9 +193,18 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
+### Install the `/cortex` Skill (Optional)
+
+Link the skill for slash command access:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s ~/.claude/memory/skills/cortex ~/.claude/skills/cortex
+```
+
 ### Restart Claude Code
 
-The Cortex MCP tools and session hooks are now active!
+The Cortex MCP tools, session hooks, and `/cortex` skill are now active!
 
 ## How It Works
 
