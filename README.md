@@ -122,6 +122,55 @@ tail -20 ~/.claude/memory/logs/*.log
 timeout 3 node ~/.claude/memory/cortex/server.cjs
 ```
 
+### Natural Language Usage
+
+Just ask naturally - Claude will use Cortex tools when relevant:
+
+| What You Say | What Cortex Does |
+|--------------|------------------|
+| "What did I do last time?" | `cortex__recall` - retrieves recent context |
+| "Remember this for next time: ..." | `cortex__learn` - stores the insight |
+| "What patterns am I seeing?" | `cortex__reflect` - meta-cognitive analysis |
+| "How does X connect to Y?" | `cortex__infer` - finds relationships |
+| "Search my memories for auth" | `cortex__query` - keyword search |
+| "Clean up old memories" | `cortex__consolidate` - deduplication |
+| "What have I learned about testing?" | `cortex__query` + `cortex__reflect` |
+| "Why did I make that decision?" | `cortex__recall` - decision tracking |
+
+**Pro tip:** You don't need to know the tool names. Just describe what you need.
+
+### Limitations
+
+⚠️ **Cortex cannot:**
+- Remember conversations from before installation
+- Access memories from other users or machines (yet - sync planned)
+- Work offline (requires Anthropic API for Haiku/Sonnet)
+- Guarantee perfect recall (relevance threshold filters results)
+- Read your mind (be specific about what you want to remember)
+
+💡 **For best results:**
+- Use `/cortex learn` for important insights you want to preserve
+- Check `/cortex stats` periodically to see what's stored
+- Run `/cortex consolidate` monthly to clean up duplicates
+- Be explicit: "Remember: always check JWT expiry first" > "note this"
+
+### Cost Transparency
+
+Cortex uses two Claude models with different costs:
+
+| Model | Tools | Cost | When Used |
+|-------|-------|------|-----------|
+| **Haiku** | query, recall | ~$0.25/1M tokens | Every search, recall |
+| **Sonnet** | reflect, infer, learn, consolidate | ~$3/1M tokens | Deep reasoning only |
+
+**Typical costs:**
+- Single query: ~$0.0001 (Haiku)
+- Deep reflection: ~$0.005-0.01 (Sonnet)
+- Session extraction: ~$0.002-0.005 (Haiku analysis)
+- Monthly estimate: $1-5 depending on usage
+
+Use `/cortex stats` to see your actual usage and costs.
+
 ---
 
 ## MCP Tools
@@ -205,6 +254,31 @@ ln -s ~/.claude/memory/skills/cortex ~/.claude/skills/cortex
 ### Restart Claude Code
 
 The Cortex MCP tools, session hooks, and `/cortex` skill are now active!
+
+### Verify Installation
+
+After restarting Claude Code, verify everything works:
+
+```bash
+# Check MCP server is connected
+claude mcp list | grep cortex
+# Expected: cortex: node /home/YOUR_USER/.claude/memory/cortex/server.cjs - ✓ Connected
+
+# Test the skill
+/cortex status
+```
+
+### First Use Example
+
+Try these commands to verify Cortex is working:
+
+```
+/cortex                      # Should show status
+/cortex learn "Test memory"  # Should store successfully
+/cortex query "test"         # Should find your test memory
+```
+
+If all three work, Cortex is fully operational! 🧠
 
 ## How It Works
 
@@ -373,6 +447,76 @@ Stale locks are auto-cleaned after TTL expires. To force cleanup:
 ```bash
 rm -rf ~/.claude/memory/.locks/*
 ```
+
+### Cortex Not Responding
+
+If Cortex tools seem unresponsive:
+
+1. **Check server is running:**
+   ```bash
+   timeout 3 node ~/.claude/memory/cortex/server.cjs
+   # Should show: "Cortex MCP Server running..."
+   ```
+
+2. **Check API key is set:**
+   ```bash
+   echo $ANTHROPIC_API_KEY | head -c 10
+   # Should show first 10 chars of your key
+   ```
+
+3. **Check for errors in logs:**
+   ```bash
+   tail -50 ~/.claude/memory/logs/cortex-*.log
+   ```
+
+4. **Full reset (last resort):**
+   ```bash
+   # Kill any stuck processes
+   pkill -f "cortex/server.cjs"
+   # Clear locks
+   rm -rf ~/.claude/memory/.locks/*
+   # Clear session cache
+   rm -f ~/.claude/memory/data/.session-*
+   # Restart Claude Code
+   ```
+
+### Skill Not Working
+
+If `/cortex` commands don't work:
+
+1. **Check skill is linked:**
+   ```bash
+   ls -la ~/.claude/skills/cortex
+   # Should show symlink to ~/.claude/memory/skills/cortex
+   ```
+
+2. **Re-link skill:**
+   ```bash
+   rm -f ~/.claude/skills/cortex
+   ln -s ~/.claude/memory/skills/cortex ~/.claude/skills/cortex
+   ```
+
+3. **Check skill file exists:**
+   ```bash
+   cat ~/.claude/memory/skills/cortex/SKILL.md | head -20
+   ```
+
+### High API Costs
+
+If costs seem higher than expected:
+
+1. **Check usage with `/cortex stats`**
+
+2. **Limit Sonnet usage:**
+   - Use `/cortex query` instead of `/cortex reflect` for simple searches
+   - `query` uses Haiku (~$0.25/1M), `reflect` uses Sonnet (~$3/1M)
+
+3. **Adjust extraction aggressiveness:**
+   ```json
+   // In data/configs/current.json
+   { "sessionEnd": { "qualityThreshold": 0.6 } }
+   ```
+   Higher threshold = fewer extractions = lower cost
 
 ## API Reference
 
