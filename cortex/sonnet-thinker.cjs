@@ -38,6 +38,29 @@ const DEPTH_TOKENS = {
   deep: 2048,
 };
 
+// Cost per million tokens (as of 2026)
+const SONNET_COST = {
+  inputPerMillion: 3.0,   // $3/1M input tokens
+  outputPerMillion: 15.0, // $15/1M output tokens
+};
+
+/**
+ * Estimate cost of an operation
+ * @param {number} inputTokens - Estimated input tokens
+ * @param {number} outputTokens - Estimated output tokens
+ * @returns {{ cost: number, display: string }}
+ */
+function estimateCost(inputTokens, outputTokens) {
+  const inputCost = (inputTokens / 1000000) * SONNET_COST.inputPerMillion;
+  const outputCost = (outputTokens / 1000000) * SONNET_COST.outputPerMillion;
+  const totalCost = inputCost + outputCost;
+
+  return {
+    cost: totalCost,
+    display: totalCost < 0.001 ? '<$0.001' : `~$${totalCost.toFixed(4)}`,
+  };
+}
+
 // =============================================================================
 // SONNET THINKER CLASS
 // =============================================================================
@@ -71,21 +94,51 @@ class SonnetThinker {
       path.join(this.basePath, 'data', 'memories', 'insights.jsonl')
     );
 
-    // Stats tracking
+    // Stats tracking with cost
     this.stats = {
       reflections: 0,
       inferences: 0,
       learnings: 0,
       consolidations: 0,
-      tokensUsed: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalCost: 0,
     };
   }
 
   /**
-   * Call Sonnet for deep reasoning
+   * Get current session cost
+   * @returns {Object}
+   */
+  getSessionCost() {
+    const estimated = estimateCost(this.stats.inputTokens, this.stats.outputTokens);
+    return {
+      inputTokens: this.stats.inputTokens,
+      outputTokens: this.stats.outputTokens,
+      estimatedCost: estimated.display,
+      operations: {
+        reflections: this.stats.reflections,
+        inferences: this.stats.inferences,
+        learnings: this.stats.learnings,
+        consolidations: this.stats.consolidations,
+      },
+    };
+  }
+
+  /**
+   * Call Sonnet for deep reasoning with cost tracking
    * @private
    */
   async _callSonnet(systemPrompt, userMessage, maxTokens = MAX_TOKENS) {
+    // Estimate tokens for cost warning (rough estimate: 4 chars = 1 token)
+    const estimatedInputTokens = Math.ceil((systemPrompt.length + userMessage.length) / 4);
+    const estimated = estimateCost(estimatedInputTokens, maxTokens);
+
+    // Show cost warning for larger operations
+    if (estimated.cost > 0.005) {
+      process.stderr.write(`[Cortex] Sonnet operation - estimated cost: ${estimated.display}\n`);
+    }
+
     try {
       const response = await this.client.messages.create({
         model: SONNET_MODEL,
@@ -94,8 +147,14 @@ class SonnetThinker {
         messages: [{ role: 'user', content: userMessage }],
       });
 
-      this.stats.tokensUsed += response.usage?.input_tokens || 0;
-      this.stats.tokensUsed += response.usage?.output_tokens || 0;
+      // Track actual usage
+      const inputTokens = response.usage?.input_tokens || 0;
+      const outputTokens = response.usage?.output_tokens || 0;
+      const actualCost = estimateCost(inputTokens, outputTokens);
+
+      this.stats.inputTokens += inputTokens;
+      this.stats.outputTokens += outputTokens;
+      this.stats.totalCost += actualCost.cost;
 
       return response.content[0]?.text || '';
     } catch (error) {
@@ -154,6 +213,9 @@ Please reflect on this topic. What patterns do you see? What insights emerge? Wh
 
     const duration = Date.now() - startTime;
 
+    // Calculate cost for this operation
+    const sessionCost = this.getSessionCost();
+
     return {
       topic,
       depth,
@@ -161,7 +223,11 @@ Please reflect on this topic. What patterns do you see? What insights emerge? Wh
       memoriesConsidered: memories.memories?.length || 0,
       stats: {
         duration,
-        tokensUsed: maxTokens,
+        maxTokens,
+      },
+      cost: {
+        session: sessionCost.estimatedCost,
+        note: '💡 Use /cortex stats to see detailed cost breakdown',
       },
     };
   }
@@ -216,12 +282,17 @@ What connections exist between these concepts? What patterns or relationships em
 
     const duration = Date.now() - startTime;
 
+    const sessionCost = this.getSessionCost();
+
     return {
       concepts,
       inference,
       memoriesUsed: includeMemories,
       stats: {
         duration,
+      },
+      cost: {
+        session: sessionCost.estimatedCost,
       },
     };
   }

@@ -477,6 +477,43 @@ class NeuralAnimator {
     this.intervalId = null;
     this.isRunning = false;
     this.shuffledPhrases = this._shufflePhrases(); // Randomize phrases each session
+
+    // Activity tracking for tool-specific display
+    this.currentActivity = null;
+    this.activityStartTime = null;
+  }
+
+  /**
+   * Set the current activity/tool being executed
+   * @param {string} activity - Tool or activity name (e.g., 'cortex__reflect')
+   */
+  setActivity(activity) {
+    this.currentActivity = activity;
+    this.activityStartTime = activity ? Date.now() : null;
+  }
+
+  /**
+   * Get formatted elapsed time for current activity
+   * @returns {string} Formatted elapsed time (e.g., '2.3s')
+   */
+  _getElapsedTime() {
+    if (!this.activityStartTime) return '';
+    const elapsed = (Date.now() - this.activityStartTime) / 1000;
+    return `${elapsed.toFixed(1)}s`;
+  }
+
+  /**
+   * Format activity name for display (remove prefix, add spacing)
+   * @param {string} activity - Raw activity name
+   * @returns {string} Formatted name
+   */
+  _formatActivityName(activity) {
+    if (!activity) return '';
+    // Remove common prefixes and format nicely
+    return activity
+      .replace(/^cortex__/, '')
+      .replace(/^mcp__/, '')
+      .replace(/_/g, ' ');
   }
 
   /**
@@ -521,6 +558,7 @@ class NeuralAnimator {
 
   /**
    * Render a single animation frame with Claude-like color pulsation
+   * Now includes optional activity/tool indicator
    */
   renderFrame() {
     const pulse = this._renderPulseFrame(this.frameIndex);
@@ -530,6 +568,16 @@ class NeuralAnimator {
     // Apply pulsation to the phrase text (Claude-like breathing effect)
     const pulsedPhrase = getPulsedColor(colors.primary, this.pulseColorIndex) + phrase + COLORS.reset;
     const dots = getPulsedColor(colors.secondary, this.pulseColorIndex) + '...' + COLORS.reset;
+
+    // Build the frame with optional activity indicator
+    if (this.currentActivity) {
+      const activityName = this._formatActivityName(this.currentActivity);
+      const elapsed = this._getElapsedTime();
+      const activityDisplay = getPulsedColor(colors.accent, this.pulseColorIndex) + activityName + COLORS.reset;
+      const elapsedDisplay = elapsed ? c(colors.secondary, ` (${elapsed})`) : '';
+
+      return `${pulse}  ${activityDisplay}${elapsedDisplay} · ${pulsedPhrase}${dots}`;
+    }
 
     return `${pulse}  ${pulsedPhrase}${dots}`;
   }
@@ -618,8 +666,12 @@ class NeuralProgressDisplay {
 
   /**
    * Start loading animation
+   * @param {string} activity - Optional activity/tool name to display
    */
-  startLoading() {
+  startLoading(activity = null) {
+    if (activity) {
+      this.animator.setActivity(activity);
+    }
     this.animator.start((frame) => {
       this._overwrite('  ' + frame);
     }, 120);
@@ -627,10 +679,64 @@ class NeuralProgressDisplay {
 
   /**
    * Stop loading animation
+   * @param {boolean} showCompletion - Whether to show completion message
    */
-  stopLoading() {
+  stopLoading(showCompletion = false) {
+    const activity = this.animator.currentActivity;
+    const elapsed = this.animator._getElapsedTime();
+
     this.animator.stop();
-    this._overwrite('');
+    this.animator.setActivity(null);
+
+    if (showCompletion && activity) {
+      const formattedName = activity
+        .replace(/^cortex__/, '')
+        .replace(/^mcp__/, '')
+        .replace(/_/g, ' ');
+      this._overwrite(`  ${c(this.theme.colors.accent, '✓')} ${c(this.theme.colors.primary, formattedName)} ${c(this.theme.colors.secondary, `(${elapsed})`)}\n`);
+    } else {
+      this._overwrite('');
+    }
+  }
+
+  /**
+   * Update the current activity without stopping/starting animation
+   * @param {string} activity - New activity/tool name
+   */
+  setActivity(activity) {
+    this.animator.setActivity(activity);
+  }
+
+  /**
+   * Start activity with loading animation (convenience method)
+   * @param {string} activity - Activity/tool name
+   */
+  startActivity(activity) {
+    this.startLoading(activity);
+  }
+
+  /**
+   * Stop activity with completion indicator
+   * @param {boolean} success - Whether activity completed successfully
+   */
+  stopActivity(success = true) {
+    const activity = this.animator.currentActivity;
+    const elapsed = this.animator._getElapsedTime();
+
+    this.animator.stop();
+    this.animator.setActivity(null);
+
+    if (activity) {
+      const formattedName = activity
+        .replace(/^cortex__/, '')
+        .replace(/^mcp__/, '')
+        .replace(/_/g, ' ');
+      const icon = success ? '✓' : '✗';
+      const iconColor = success ? 'green' : 'red';
+      this._overwrite(`  ${c(iconColor, icon)} ${c(this.theme.colors.primary, formattedName)} ${c(this.theme.colors.secondary, `(${elapsed})`)}\n`);
+    } else {
+      this._overwrite('');
+    }
   }
 
   /**
@@ -681,6 +787,69 @@ class NeuralProgressDisplay {
    */
   getThemeName() {
     return this.theme.name;
+  }
+
+  // ==========================================================================
+  // CONVENIENCE METHODS (aliases and shortcuts used by hooks)
+  // ==========================================================================
+
+  /**
+   * Initialize the display (show header if verbose)
+   */
+  init() {
+    if (this.verbose) {
+      this.showHeader();
+    }
+  }
+
+  /**
+   * Show a progress step with optional icon
+   * @param {string} message - Step message
+   * @param {string} type - Step type: 'loading', 'success', 'warning', 'error', 'info'
+   */
+  step(message, type = 'info') {
+    const icons = {
+      loading: '◌',
+      success: '✓',
+      warning: '⚠',
+      error: '✗',
+      info: '·',
+    };
+    const colors = {
+      loading: 'cyan',
+      success: 'green',
+      warning: 'yellow',
+      error: 'red',
+      info: 'gray',
+    };
+
+    const icon = icons[type] || icons.info;
+    const color = colors[type] || colors.info;
+
+    if (type === 'loading') {
+      // Start loading animation with this step as activity
+      this.startLoading(message);
+    } else {
+      this._write(`  ${c(color, icon)} ${message}\n`);
+    }
+  }
+
+  /**
+   * Alias for showSummary - display final stats
+   * @param {Object} stats - Statistics object
+   */
+  summary(stats) {
+    this.stopLoading(); // Stop any running animation
+    this.showSummary(stats);
+  }
+
+  /**
+   * Alias for showError
+   * @param {string} message - Error message
+   */
+  error(message) {
+    this.stopLoading(); // Stop any running animation
+    this.showError(message);
   }
 }
 

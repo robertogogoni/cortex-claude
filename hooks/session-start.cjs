@@ -24,6 +24,8 @@ const BASE_PATH = path.dirname(__dirname);
 // Dynamic requires with error handling
 let QueryOrchestrator, ContextAnalyzer, getConfigManager, getLADSCore, generateId, getTimestamp;
 let ProgressDisplay, InjectionFormatter;
+let WIPDetector;
+let OnboardingManager;
 
 try {
   ({ QueryOrchestrator } = require('./query-orchestrator.cjs'));
@@ -32,6 +34,8 @@ try {
   ({ getLADSCore } = require('../core/lads/index.cjs'));
   ({ generateId, getTimestamp } = require('../core/types.cjs'));
   ({ ProgressDisplay, InjectionFormatter } = require('./injection-formatter.cjs'));
+  ({ WIPDetector } = require('./wip-detector.cjs'));
+  ({ OnboardingManager } = require('./onboarding.cjs'));
 } catch (error) {
   // If modules not found, output empty injection
   console.log(JSON.stringify({
@@ -76,6 +80,31 @@ class SessionStartHook {
     } catch {
       // LADS not available, continue without tracking
     }
+
+    // Initialize WIP detector
+    this.wipDetector = null;
+    try {
+      if (WIPDetector) {
+        this.wipDetector = new WIPDetector({
+          basePath: this.basePath,
+          workingDir: process.env.CORTEX_WORKING_DIR || process.cwd(),
+        });
+      }
+    } catch {
+      // WIP detection not available, continue without it
+    }
+
+    // Initialize onboarding manager
+    this.onboarding = null;
+    try {
+      if (OnboardingManager) {
+        this.onboarding = new OnboardingManager({
+          basePath: this.basePath,
+        });
+      }
+    } catch {
+      // Onboarding not available, continue without it
+    }
   }
 
   /**
@@ -102,6 +131,21 @@ class SessionStartHook {
       // Initialize LADS if available
       if (this.lads && !this.lads.initialized) {
         await this.lads.initialize();
+      }
+
+      // Detect work in progress from previous sessions
+      let wipResult = { hasWIP: false, items: [] };
+      let wipInjection = '';
+      if (this.wipDetector) {
+        try {
+          wipResult = await this.wipDetector.detect();
+          if (wipResult.hasWIP) {
+            wipInjection = this.wipDetector.formatForInjection(wipResult);
+          }
+        } catch (error) {
+          // WIP detection is optional, don't fail the session
+          console.error('[SessionStart] WIP detection failed:', error.message);
+        }
       }
 
       // Query relevant memories
@@ -153,17 +197,52 @@ class SessionStartHook {
       };
 
       // Format for injection using rich formatter
-      const injection = this.formatter.formatMemories(
+      const memoryInjection = this.formatter.formatMemories(
         queryResult.memories,
         queryResult.context,
         stats
       );
+
+      // Check for onboarding message
+      let onboardingInjection = '';
+      let onboardingType = null;
+      if (this.onboarding) {
+        try {
+          const onboardingMessage = this.onboarding.getOnboardingMessage();
+          if (onboardingMessage) {
+            onboardingInjection = onboardingMessage.message;
+            onboardingType = onboardingMessage.type;
+          }
+          // Mark session complete (increments session count, saves state)
+          this.onboarding.completeOnboarding();
+          if (onboardingType === 'tips') {
+            this.onboarding.markTipsShown();
+          }
+        } catch (error) {
+          // Onboarding is optional, don't fail the session
+          console.error('[SessionStart] Onboarding failed:', error.message);
+        }
+      }
+
+      // Combine all injections: onboarding → WIP → memories
+      let injection = '';
+      if (onboardingInjection) {
+        injection = onboardingInjection + '\n';
+      }
+      if (wipInjection) {
+        injection += wipInjection + '\n';
+      }
+      injection += memoryInjection;
 
       return {
         success: true,
         enabled: true,
         injection,
         decisionId,
+        wipDetected: wipResult.hasWIP,
+        wipItems: wipResult.items.length,
+        onboardingShown: !!onboardingType,
+        onboardingType,
         stats,
       };
     } catch (error) {
@@ -298,8 +377,11 @@ async function main() {
     const stats = result.stats || {};
     const selected = stats.memoriesSelected || 0;
     const tokens = stats.estimatedTokens || 0;
+    const wipItems = result.wipItems || 0;
 
-    if (selected > 0) {
+    if (wipItems > 0) {
+      process.stderr.write(`✓ Cortex: ${selected} memories + ${wipItems} WIP items\n`);
+    } else if (selected > 0) {
       process.stderr.write(`✓ Cortex: ${selected} memories (${tokens} tokens)\n`);
     } else {
       process.stderr.write(`✓ Cortex: Ready\n`);

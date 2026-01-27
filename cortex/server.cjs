@@ -31,11 +31,22 @@ async function main() {
   const { HaikuWorker } = require('./haiku-worker.cjs');
   const { SonnetThinker } = require('./sonnet-thinker.cjs');
   const { NeuralProgressDisplay } = require('../hooks/neural-visuals.cjs');
+  const { CortexError, fromAPIError, fromMemoryError } = require('../core/errors.cjs');
 
   // Initialize workers
   const haiku = new HaikuWorker();
   const sonnet = new SonnetThinker();
   const progress = new NeuralProgressDisplay({ verbose: false });
+
+  // Tool execution tracking
+  const TOOL_MODELS = {
+    'cortex__query': { model: 'Haiku', estimatedMs: 500 },
+    'cortex__recall': { model: 'Haiku', estimatedMs: 300 },
+    'cortex__reflect': { model: 'Sonnet', estimatedMs: 3000 },
+    'cortex__infer': { model: 'Sonnet', estimatedMs: 2000 },
+    'cortex__learn': { model: 'Sonnet', estimatedMs: 2000 },
+    'cortex__consolidate': { model: 'Sonnet', estimatedMs: 5000 },
+  };
 
   // Log to stderr to not interfere with stdio transport
   const log = (msg) => process.stderr.write(`[Cortex] ${msg}\n`);
@@ -213,11 +224,26 @@ async function main() {
     return { tools: TOOLS };
   });
 
-  // Handle tool calls
+  // Handle tool calls with progress tracking
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    const startTime = Date.now();
 
-    log(`Tool call: ${name}`);
+    // Get tool info for progress tracking
+    const toolInfo = TOOL_MODELS[name] || { model: 'Unknown', estimatedMs: 1000 };
+
+    log(`Tool call: ${name} (${toolInfo.model})`);
+
+    // Show progress for Sonnet operations (they take longer)
+    let progressInterval = null;
+    if (toolInfo.model === 'Sonnet') {
+      let dots = 0;
+      progressInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        const elapsed = Date.now() - startTime;
+        process.stderr.write(`\r[Cortex] ${name} - ${toolInfo.model} thinking${'.'.repeat(dots)}${' '.repeat(3 - dots)} (${Math.round(elapsed / 1000)}s)`);
+      }, 500);
+    }
 
     try {
       let result;
@@ -250,7 +276,14 @@ async function main() {
           break;
 
         default:
-          throw new Error(`Unknown tool: ${name}`);
+          throw new CortexError('CORTEX_E202', { details: name });
+      }
+
+      // Clear progress and show completion
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        const duration = Date.now() - startTime;
+        process.stderr.write(`\r[Cortex] ${name} - ${toolInfo.model} ✓ (${Math.round(duration / 1000)}s)\n`);
       }
 
       return {
@@ -261,11 +294,35 @@ async function main() {
       };
 
     } catch (error) {
-      log(`Error in ${name}: ${error.message}`);
+      // Clear progress on error
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        process.stderr.write(`\r[Cortex] ${name} - ${toolInfo.model} ✗\n`);
+      }
+
+      // Convert to CortexError if not already
+      let cortexError = error;
+      if (!(error instanceof CortexError)) {
+        // Try to categorize the error
+        if (error.message?.includes('API') || error.message?.includes('fetch') ||
+            error.message?.includes('401') || error.message?.includes('429')) {
+          cortexError = fromAPIError(error);
+        } else if (error.message?.includes('ENOENT') || error.message?.includes('JSON')) {
+          cortexError = fromMemoryError(name, error);
+        } else {
+          cortexError = new CortexError('CORTEX_E900', {
+            cause: error,
+            details: `${name}: ${error.message}`
+          });
+        }
+      }
+
+      log(`Error ${cortexError.code} in ${name}: ${cortexError.message}`);
+
       return {
         content: [{
           type: 'text',
-          text: `Error: ${error.message}`
+          text: cortexError.toDisplayString()
         }],
         isError: true
       };
