@@ -2,7 +2,7 @@
 
 [![Tests](https://img.shields.io/badge/tests-90%2F90%20passing-brightgreen)]()
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)]()
-[![MCP](https://img.shields.io/badge/MCP-6%20tools-purple)]()
+[![MCP](https://img.shields.io/badge/MCP-6%20tools%20%2B%20resources-purple)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
 **A dual-model cognitive layer for Claude Code** that provides true cross-session memory through auto-extraction, auto-recall, MCP tools for deep reasoning, and compounding learnings.
@@ -192,6 +192,103 @@ Cortex exposes 6 MCP tools via its server:
 | `cortex__infer` | Find non-obvious connections between concepts |
 | `cortex__learn` | Extract, analyze, and store insights with quality gating |
 | `cortex__consolidate` | Merge duplicates, remove outdated, reorganize memories |
+
+## MCP Resources
+
+Cortex also exposes its memory stores as MCP Resources, allowing direct browsing and access to memory files.
+
+### Available Resources
+
+| URI Pattern | Resource | Description |
+|-------------|----------|-------------|
+| `cortex://memories/working` | Working Memory | Current session context and active tasks |
+| `cortex://memories/short-term` | Short-Term Memory | Recent session history (last 7 days) |
+| `cortex://memories/long-term` | Long-Term Memory | Consolidated insights and patterns |
+| `cortex://patterns/decisions` | Decision Patterns | Historical decisions and outcomes |
+| `cortex://patterns/outcomes` | Outcome Patterns | Tracked outcomes for learning |
+| `cortex://skills/index` | Skills Index | Learned skills and capabilities |
+| `cortex://projects/{id}` | Project Memory | Project-specific memories by hash |
+
+### Using Resources
+
+Resources can be accessed via the MCP protocol. In Claude Code, you can reference them with the `@` syntax (when supported by your client):
+
+```
+@cortex://memories/long-term
+@cortex://patterns/decisions
+```
+
+### Resource Templates
+
+Cortex provides URI templates for dynamic resource construction:
+
+| Template | Description |
+|----------|-------------|
+| `cortex://memories/{type}` | Access by memory type (working, short-term, long-term) |
+| `cortex://patterns/{type}` | Access by pattern type (decisions, outcomes) |
+| `cortex://projects/{projectId}` | Access by project hash |
+
+### Programmatic Access
+
+Resources are automatically discovered and can be listed:
+
+```javascript
+// The MCP server handles listResources and readResource
+const resources = await client.listResources();
+const content = await client.readResource({ uri: 'cortex://memories/long-term' });
+```
+
+Large resources (>100 entries) return a summary with sample entries to avoid overwhelming context windows.
+
+## MCP Prompts
+
+Cortex provides reusable prompt templates for common cognitive tasks.
+
+### Available Prompts
+
+| Prompt | Description | Arguments |
+|--------|-------------|-----------|
+| `weekly-review` | Summarize week's learnings and identify patterns | `focus` (optional) |
+| `debug-checklist` | Pre-debugging memory check | `error` (required), `context` (optional) |
+| `session-summary` | Generate session summary for future reference | `accomplishments` (optional) |
+| `pattern-analysis` | Analyze recurring patterns | `domain`, `depth` (both optional) |
+| `project-context` | Load all relevant project context | `projectPath` (optional) |
+
+### Using Prompts
+
+Prompts can be invoked via MCP or through Claude Code (syntax depends on client):
+
+```bash
+# Weekly review
+Use the weekly-review prompt from cortex
+
+# Debug checklist before debugging
+Use the debug-checklist prompt with error "Cannot read property 'map'"
+
+# Pattern analysis for a specific domain
+Use the pattern-analysis prompt with domain "authentication" and depth "deep"
+```
+
+### Why Prompts?
+
+Prompts standardize common cognitive workflows:
+- **Consistency**: Same approach every time you debug or review
+- **Completeness**: Prompts include all relevant Cortex tool calls
+- **Efficiency**: No need to remember which tools to use for each task
+- **Best Practices**: Built-in patterns for effective memory usage
+
+## MCP Sampling Note
+
+Cortex intentionally uses **direct Anthropic API calls** rather than MCP Sampling for LLM operations. This design choice provides:
+
+| Feature | Direct API | MCP Sampling |
+|---------|------------|--------------|
+| **Model Selection** | Haiku/Sonnet per-operation | Single client model |
+| **Cost Control** | Fine-grained (~$0.25 vs $3/1M) | Fixed client pricing |
+| **Latency** | Direct to API | Extra MCP round-trip |
+| **Customization** | Custom prompts, temperature | Limited parameters |
+
+This architecture enables Cortex to use the cheapest model (Haiku) for fast queries while reserving Sonnet for deep reasoning operations.
 
 ## Quick Start
 
