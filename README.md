@@ -1,8 +1,11 @@
 # Cortex - Claude's Cognitive Layer
 
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)]()
 [![Tests](https://img.shields.io/badge/tests-90%2F90%20passing-brightgreen)]()
+[![Lines of Code](https://img.shields.io/badge/lines-22%2C283-informational)]()
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)]()
-[![MCP](https://img.shields.io/badge/MCP-6%20tools%20%2B%20resources-purple)]()
+[![MCP](https://img.shields.io/badge/MCP-6%20tools%20%7C%207%20resources%20%7C%205%20prompts-purple)]()
+[![Security](https://img.shields.io/badge/security-AES--256--GCM-green)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
 **A dual-model cognitive layer for Claude Code** that provides true cross-session memory through auto-extraction, auto-recall, MCP tools for deep reasoning, and compounding learnings.
