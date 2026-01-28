@@ -126,6 +126,52 @@ const ERROR_CODES = {
     suggestion: 'Cortex MCP server is not running. Check ~/.claude.json and restart Claude Code.',
   },
 
+  // Rate Limit Errors (E310-E319)
+  CORTEX_E310: {
+    code: 'CORTEX_E310',
+    category: 'rate-limit',
+    message: 'Rate limit exceeded',
+    suggestion: 'Too many calls in a short period. Wait a moment before retrying.',
+  },
+  CORTEX_E311: {
+    code: 'CORTEX_E311',
+    category: 'rate-limit',
+    message: 'Hourly rate limit exceeded',
+    suggestion: 'You have exceeded the hourly limit. Wait or use cortex__query for cached results.',
+  },
+  CORTEX_E312: {
+    code: 'CORTEX_E312',
+    category: 'rate-limit',
+    message: 'Daily rate limit exceeded',
+    suggestion: 'Daily limit reached. Consider using consolidate to reduce future queries.',
+  },
+  CORTEX_E313: {
+    code: 'CORTEX_E313',
+    category: 'rate-limit',
+    message: 'Tool in cooldown',
+    suggestion: 'This tool was rate-limited. Wait for the cooldown to expire.',
+  },
+
+  // Encryption Errors (E500-E509)
+  CORTEX_E500: {
+    code: 'CORTEX_E500',
+    category: 'encryption',
+    message: 'Encryption operation failed',
+    suggestion: 'Check that CORTEX_ENCRYPTION_SECRET is set and valid.',
+  },
+  CORTEX_E501: {
+    code: 'CORTEX_E501',
+    category: 'encryption',
+    message: 'Decryption failed',
+    suggestion: 'The data may be corrupted or encrypted with a different key.',
+  },
+  CORTEX_E502: {
+    code: 'CORTEX_E502',
+    category: 'encryption',
+    message: 'Encryption not configured',
+    suggestion: 'Set CORTEX_ENCRYPTION_SECRET environment variable to enable encryption.',
+  },
+
   // Quality Errors (E400-E499)
   CORTEX_E400: {
     code: 'CORTEX_E400',
