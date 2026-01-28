@@ -561,9 +561,45 @@ class QueryOrchestrator {
 }
 
 // =============================================================================
+// MEMORY SOURCE DEFINITIONS
+// =============================================================================
+
+/**
+ * Available memory sources with their paths and descriptions
+ */
+const MEMORY_SOURCES = {
+  working: {
+    path: 'data/memories/working.jsonl',
+    description: 'Current session context and active tasks',
+    ttl: 'session',
+  },
+  shortTerm: {
+    path: 'data/memories/short-term.jsonl',
+    description: 'Recent session history (last 7 days)',
+    ttl: '7d',
+  },
+  longTerm: {
+    path: 'data/memories/long-term.jsonl',
+    description: 'Consolidated insights and patterns',
+    ttl: 'permanent',
+  },
+  skills: {
+    path: 'data/skills/index.jsonl',
+    description: 'Learned skills and capabilities',
+    ttl: 'permanent',
+  },
+  project: {
+    path: 'data/projects/',
+    description: 'Project-specific memories by hash',
+    ttl: 'permanent',
+  },
+};
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
 module.exports = {
   QueryOrchestrator,
+  MEMORY_SOURCES,
 };
