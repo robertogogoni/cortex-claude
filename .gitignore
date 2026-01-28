@@ -5,6 +5,7 @@ node_modules/
 data/memories/
 data/patterns/
 data/configs/history/
+data/*-state.json
 logs/
 cache/
 
