@@ -79,6 +79,38 @@ Parses user-curated CLAUDE.md files.
 - High confidence (user-curated content)
 - **Write Support**: No (user-maintained files)
 
+#### Section 2.3.5: Warp SQLite Adapter
+Local SQLite storage for Warp Terminal AI history.
+- Priority: 0.75
+- Timeout: 500ms
+- **Read Support**: Full
+  - `query()` - Search ai_queries and agent_conversations
+  - `getTotalCounts()` - Statistics across all databases
+- **Write Support**: No (Warp manages its own database)
+- **Data Sources**:
+  - `~/.local/state/warp-terminal/warp.sqlite`
+  - `~/.local/state/warp-terminal-preview/warp.sqlite`
+
+#### Section 2.3.6: Gemini Adapter
+Markdown file storage for Google Antigravity/Gemini task sessions.
+- Priority: 0.7
+- Timeout: 200ms
+- **Read Support**: Full
+  - `query()` - Search task sessions by content
+  - `getSessionCount()` - Count available sessions
+- **Write Support**: No (Gemini manages its own files)
+- **Data Source**: `~/.gemini/antigravity/brain/`
+
+#### Section 2.3.7: Episodic Annotations Layer
+Overlay for adding write capability to read-only episodic memory.
+- **Write Support**: Full
+  - `addAnnotation()` - Tag, note, highlight conversations
+  - `updateAnnotation()` - Modify existing annotation
+  - `deleteAnnotation()` - Remove annotation
+  - `searchAnnotations()` - Find by query
+  - `enrichRecords()` - Merge annotations into MemoryRecords
+- **Storage**: `~/.claude/memory/annotations/episodic.jsonl`
+
 ### Section 2.4: Adapter Registry
 
 Central registry that:
