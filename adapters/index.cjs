@@ -5,7 +5,7 @@
  * coordinates parallel queries, and provides factory functions.
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md#section-2.4
+ * @see Design: ../docs/design/memory-orchestrator.md#section-2.4
  */
 
 'use strict';
@@ -15,6 +15,7 @@ const { JSONLAdapter } = require('./jsonl-adapter.cjs');
 const { EpisodicMemoryAdapter } = require('./episodic-memory-adapter.cjs');
 const { KnowledgeGraphAdapter } = require('./knowledge-graph-adapter.cjs');
 const { ClaudeMdAdapter } = require('./claudemd-adapter.cjs');
+const { GeminiAdapter } = require('./gemini-adapter.cjs');
 const { expandPath } = require('../core/types.cjs');
 
 // =============================================================================
@@ -285,11 +286,18 @@ function createDefaultRegistry(config = {}) {
     enabled: claudeMdConfig.enabled !== false,  // Enabled by default
     paths: claudeMdConfig.paths || [
       '~/.claude/CLAUDE.md',
-      '~/claude-cross-machine-sync/CLAUDE.md',
       '.claude/CLAUDE.md',
       './CLAUDE.md',
     ],
     cacheTimeout: claudeMdConfig.cacheTimeout || 60000,
+  }));
+
+  // 5. Gemini Adapter (file-based - Antigravity brain sessions)
+  const geminiConfig = config.adapters?.gemini || {};
+  registry.register(new GeminiAdapter({
+    enabled: geminiConfig.enabled !== false,  // Enabled by default
+    brainPath: geminiConfig.brainPath,  // Auto-discovers if not provided
+    cacheTTL: geminiConfig.cacheTTL || 5 * 60 * 1000,
   }));
 
   return registry;
@@ -313,4 +321,5 @@ module.exports = {
   EpisodicMemoryAdapter,
   KnowledgeGraphAdapter,
   ClaudeMdAdapter,
+  GeminiAdapter,
 };

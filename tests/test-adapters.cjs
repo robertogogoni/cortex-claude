@@ -789,17 +789,18 @@ async function runFactoryTests() {
 
   // Test: Creates registry with all adapters
   total++;
-  if (test('Creates registry with all 4 adapters', () => {
+  if (test('Creates registry with all 5 adapters', () => {
     const registry = createDefaultRegistry({
       basePath: TEST_DIR,
       verbose: false,
     });
     const all = registry.getAll();
-    assert.strictEqual(all.length, 4);
+    assert.strictEqual(all.length, 5);
     assert.ok(registry.get('jsonl'));
     assert.ok(registry.get('episodic-memory'));
     assert.ok(registry.get('knowledge-graph'));
     assert.ok(registry.get('claudemd'));
+    assert.ok(registry.get('gemini'));
   })) passed++;
 
   // Test: Custom adapter config
