@@ -9,7 +9,7 @@
  * - Commands and skills
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md#section-2.3.4
+ * @see Design: ../docs/design/memory-orchestrator.md#section-2.3.4
  */
 
 'use strict';
@@ -43,9 +43,9 @@ class ClaudeMdAdapter extends BaseAdapter {
     });
 
     // Paths to scan for CLAUDE.md files
+    // Users can add custom paths via config.paths (e.g., personal sync repos)
     this.paths = (config.paths || [
       '~/.claude/CLAUDE.md',
-      '~/claude-cross-machine-sync/CLAUDE.md',
       '.claude/CLAUDE.md',
       './CLAUDE.md',
     ]).map(p => expandPath(p));
@@ -459,7 +459,8 @@ class ClaudeMdAdapter extends BaseAdapter {
    */
   _getProjectHash(filePath) {
     // Global CLAUDE.md = null (cross-project)
-    if (filePath.includes('/.claude/') || filePath.includes('/claude-cross-machine-sync/')) {
+    // Paths under ~/.claude/ are considered global/cross-project
+    if (filePath.includes('/.claude/')) {
       return null;
     }
 

@@ -94,6 +94,10 @@ class SonnetThinker {
       path.join(this.basePath, 'data', 'memories', 'insights.jsonl')
     );
 
+    // Track whether stores are loaded (with promise for race condition safety)
+    this._storesLoaded = false;
+    this._loadingPromise = null;
+
     // Stats tracking with cost
     this.stats = {
       reflections: 0,
@@ -104,6 +108,44 @@ class SonnetThinker {
       outputTokens: 0,
       totalCost: 0,
     };
+  }
+
+  /**
+   * Ensure stores are loaded before use
+   * Uses loading promise pattern to prevent race conditions from concurrent calls
+   * @private
+   */
+  async _ensureStoresLoaded() {
+    if (this._storesLoaded) return;
+
+    // Serialize concurrent calls with a loading promise
+    if (!this._loadingPromise) {
+      this._loadingPromise = (async () => {
+        try {
+          // Load stores in parallel for better performance
+          const [learningsResult, insightsResult] = await Promise.all([
+            this.learningsStore.load(),
+            this.insightsStore.load(),
+          ]);
+
+          // Log any load issues (non-fatal)
+          if (!learningsResult.success || !insightsResult.success) {
+            process.stderr.write(
+              `[SonnetThinker] Store load warning: learnings=${learningsResult.success}, insights=${insightsResult.success}\n`
+            );
+          }
+
+          this._storesLoaded = true;
+        } catch (error) {
+          // Reset promise so retry is possible
+          this._loadingPromise = null;
+          process.stderr.write(`[SonnetThinker] Store load failed: ${error.message}\n`);
+          throw error;
+        }
+      })();
+    }
+
+    await this._loadingPromise;
   }
 
   /**
@@ -307,6 +349,9 @@ What connections exist between these concepts? What patterns or relationships em
    * @returns {Promise<Object>} Storage result
    */
   async learn(insight, context = '', type = 'general', tags = []) {
+    // Ensure stores are loaded before use
+    await this._ensureStoresLoaded();
+
     this.stats.learnings++;
     const startTime = Date.now();
 
@@ -510,7 +555,7 @@ Please analyze for consolidation opportunities.`;
   getStats() {
     return {
       ...this.stats,
-      estimatedCost: (this.stats.tokensUsed / 1000000) * 3, // Sonnet pricing
+      estimatedCost: estimateCost(this.stats.inputTokens, this.stats.outputTokens).display,
     };
   }
 }

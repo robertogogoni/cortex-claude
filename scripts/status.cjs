@@ -147,9 +147,9 @@ async function showStatus() {
   // Check CLAUDE.md files (via adapter)
   console.log('📖 CLAUDE.md Sources:');
   try {
+    // Default paths - users can add custom paths via adapter config
     const claudeMdPaths = [
       path.join(os.homedir(), '.claude', 'CLAUDE.md'),
-      path.join(os.homedir(), 'claude-cross-machine-sync', 'CLAUDE.md'),
       '.claude/CLAUDE.md',
       './CLAUDE.md',
     ];

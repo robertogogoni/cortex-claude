@@ -10,7 +10,7 @@
  * Applies deduplication, ranking, and token budgeting across all sources.
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md
+ * @see Design: ../docs/design/memory-orchestrator.md
  */
 
 'use strict';

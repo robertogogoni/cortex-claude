@@ -789,18 +789,21 @@ async function runFactoryTests() {
 
   // Test: Creates registry with all adapters
   total++;
-  if (test('Creates registry with all 5 adapters', () => {
+  if (test('Creates registry with all 6 adapters', () => {
     const registry = createDefaultRegistry({
       basePath: TEST_DIR,
       verbose: false,
     });
     const all = registry.getAll();
-    assert.strictEqual(all.length, 5);
+    assert.strictEqual(all.length, 6);
     assert.ok(registry.get('jsonl'));
     assert.ok(registry.get('episodic-memory'));
     assert.ok(registry.get('knowledge-graph'));
     assert.ok(registry.get('claudemd'));
     assert.ok(registry.get('gemini'));
+    assert.ok(registry.get('warp-sqlite'));
+    // Annotations layer is attached to registry, not registered as adapter
+    assert.ok(registry.annotationsLayer, 'annotationsLayer should be attached');
   })) passed++;
 
   // Test: Custom adapter config

@@ -16,6 +16,8 @@ const { EpisodicMemoryAdapter } = require('./episodic-memory-adapter.cjs');
 const { KnowledgeGraphAdapter } = require('./knowledge-graph-adapter.cjs');
 const { ClaudeMdAdapter } = require('./claudemd-adapter.cjs');
 const { GeminiAdapter } = require('./gemini-adapter.cjs');
+const { WarpSQLiteAdapter } = require('./warp-sqlite-adapter.cjs');
+const { EpisodicAnnotationsLayer } = require('./episodic-annotations-layer.cjs');
 const { expandPath } = require('../core/types.cjs');
 
 // =============================================================================
@@ -300,6 +302,24 @@ function createDefaultRegistry(config = {}) {
     cacheTTL: geminiConfig.cacheTTL || 5 * 60 * 1000,
   }));
 
+  // 6. Warp SQLite Adapter (read-only - Warp Terminal AI history)
+  const warpConfig = config.adapters?.warp || {};
+  registry.register(new WarpSQLiteAdapter({
+    enabled: warpConfig.enabled !== false,  // Enabled by default
+    databasePaths: warpConfig.databasePaths,  // Auto-discovers if not provided
+  }));
+
+  // Episodic Annotations Layer (attached to registry, not a regular adapter)
+  // This provides write capability on top of read-only episodic memory
+  const annotationsConfig = config.adapters?.episodicAnnotations || {};
+  if (annotationsConfig.enabled !== false) {
+    registry.annotationsLayer = new EpisodicAnnotationsLayer({
+      basePath: annotationsConfig.basePath || basePath,
+      priority: annotationsConfig.priority,
+      timeout: annotationsConfig.timeout,
+    });
+  }
+
   return registry;
 }
 
@@ -322,4 +342,8 @@ module.exports = {
   KnowledgeGraphAdapter,
   ClaudeMdAdapter,
   GeminiAdapter,
+  WarpSQLiteAdapter,
+
+  // Overlay layers
+  EpisodicAnnotationsLayer,
 };

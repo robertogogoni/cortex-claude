@@ -5,7 +5,7 @@
  * Provides the unified interface for querying any memory source.
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md#section-2
+ * @see Design: ../docs/design/memory-orchestrator.md#section-2
  */
 
 'use strict';
@@ -47,10 +47,13 @@
  * @typedef {Object} AdapterStats
  * @property {string} name - Adapter name
  * @property {boolean} available - Whether source is available
+ * @property {boolean} supportsWrite - Whether adapter supports writes
  * @property {number} totalRecords - Total records in source
  * @property {number} lastQueryTime - Last query duration (ms)
+ * @property {number} lastWriteTime - Last write duration (ms)
  * @property {number} cacheHitRate - Cache hit percentage 0.0-1.0
- * @property {number} errorCount - Number of errors since startup
+ * @property {number} queryErrorCount - Number of query errors since startup
+ * @property {number} writeErrorCount - Number of write errors since startup
  */
 
 /**
@@ -71,6 +74,21 @@
  * @property {MemoryType[]} [types] - Filter by memory types
  * @property {string} [projectHash] - Filter by project
  * @property {number} [minConfidence] - Minimum confidence threshold
+ */
+
+/**
+ * @typedef {Object} WriteResult
+ * @property {boolean} success - Whether write succeeded
+ * @property {string} [id] - ID of written record (for create)
+ * @property {string} [error] - Error message if failed
+ * @property {number} [affectedCount] - Number of records affected
+ */
+
+/**
+ * @typedef {Object} WriteOptions
+ * @property {boolean} [overwrite=false] - Overwrite existing record with same ID
+ * @property {boolean} [archive=false] - Archive instead of delete
+ * @property {string} [projectHash] - Project scope for the write
  */
 
 // =============================================================================
@@ -111,14 +129,24 @@ class BaseAdapter {
 
     // Stats tracking
     this._stats = {
+      // Query stats
       queriesTotal: 0,
       queriesSuccessful: 0,
       queriesFailed: 0,
       totalRecords: 0,
       lastQueryTime: 0,
+      // Write stats
+      writesTotal: 0,
+      writesSuccessful: 0,
+      writesFailed: 0,
+      lastWriteTime: 0,
+      // Cache stats
       cacheHits: 0,
       cacheMisses: 0,
-      errors: [],
+      // Circular buffer for errors (O(1) insertion instead of O(n) shift)
+      errors: new Array(10).fill(null),
+      _errorIndex: 0,
+      _errorCount: 0,
     };
   }
 
@@ -157,6 +185,58 @@ class BaseAdapter {
   }
 
   // ---------------------------------------------------------------------------
+  // OPTIONAL WRITE METHODS - Override in subclasses that support writes
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check if this adapter supports write operations
+   * @returns {boolean} True if writes are supported
+   */
+  supportsWrite() {
+    return false;
+  }
+
+  /**
+   * Write a new memory record
+   * @param {MemoryRecord} record - Record to write
+   * @param {WriteOptions} [options] - Write options
+   * @returns {Promise<WriteResult>}
+   */
+  async write(record, options) {
+    return { success: false, error: 'Write not supported by this adapter' };
+  }
+
+  /**
+   * Update an existing memory record
+   * @param {string} id - Record ID to update
+   * @param {Partial<MemoryRecord>} updates - Fields to update
+   * @param {WriteOptions} [options] - Write options
+   * @returns {Promise<WriteResult>}
+   */
+  async update(id, updates, options) {
+    return { success: false, error: 'Update not supported by this adapter' };
+  }
+
+  /**
+   * Delete a memory record
+   * @param {string} id - Record ID to delete
+   * @param {WriteOptions} [options] - Write options (archive=true to soft delete)
+   * @returns {Promise<WriteResult>}
+   */
+  async delete(id, options) {
+    return { success: false, error: 'Delete not supported by this adapter' };
+  }
+
+  /**
+   * Archive a memory record (soft delete)
+   * @param {string} id - Record ID to archive
+   * @returns {Promise<WriteResult>}
+   */
+  async archive(id) {
+    return this.delete(id, { archive: true });
+  }
+
+  // ---------------------------------------------------------------------------
   // CONCRETE METHODS - Shared implementation
   // ---------------------------------------------------------------------------
 
@@ -170,10 +250,13 @@ class BaseAdapter {
     return {
       name: this.name,
       available,
+      supportsWrite: this.supportsWrite(),
       totalRecords: this._stats.totalRecords,
       lastQueryTime: this._stats.lastQueryTime,
+      lastWriteTime: this._stats.lastWriteTime,
       cacheHitRate: this._calculateCacheHitRate(),
-      errorCount: this._stats.queriesFailed,
+      queryErrorCount: this._stats.queriesFailed,
+      writeErrorCount: this._stats.writesFailed,
     };
   }
 
@@ -202,21 +285,70 @@ class BaseAdapter {
   }
 
   /**
-   * Record an error for tracking
+   * Execute a write operation with timing and error tracking
+   * @protected
+   * @param {Function} writeFn - The write function to execute
+   * @returns {Promise<WriteResult>}
+   */
+  async _executeWrite(writeFn) {
+    const startTime = Date.now();
+    this._stats.writesTotal = (this._stats.writesTotal || 0) + 1;
+
+    try {
+      const result = await writeFn();
+      if (result.success) {
+        this._stats.writesSuccessful = (this._stats.writesSuccessful || 0) + 1;
+      } else {
+        this._stats.writesFailed = (this._stats.writesFailed || 0) + 1;
+      }
+      this._stats.lastWriteTime = Date.now() - startTime;
+      return result;
+    } catch (error) {
+      this._stats.writesFailed = (this._stats.writesFailed || 0) + 1;
+      this._stats.lastWriteTime = Date.now() - startTime;
+      this._recordError(error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Record an error for tracking using circular buffer (O(1) insertion)
    * @protected
    * @param {Error} error
    */
   _recordError(error) {
-    this._stats.errors.push({
+    const errorEntry = {
       timestamp: new Date().toISOString(),
       message: error.message,
       stack: error.stack,
-    });
+    };
 
-    // Keep only last 10 errors
-    if (this._stats.errors.length > 10) {
-      this._stats.errors.shift();
+    // Insert at current index (overwrites oldest when full)
+    this._stats.errors[this._stats._errorIndex] = errorEntry;
+    this._stats._errorIndex = (this._stats._errorIndex + 1) % 10;
+    this._stats._errorCount = Math.min(this._stats._errorCount + 1, 10);
+  }
+
+  /**
+   * Get recent errors in chronological order
+   * @returns {Array<{timestamp: string, message: string, stack: string}>}
+   */
+  getRecentErrors() {
+    const count = this._stats._errorCount;
+    if (count === 0) return [];
+
+    const result = [];
+    // Start from oldest and go to newest
+    const startIndex = (this._stats._errorIndex - count + 10) % 10;
+
+    for (let i = 0; i < count; i++) {
+      const idx = (startIndex + i) % 10;
+      if (this._stats.errors[idx]) {
+        result.push(this._stats.errors[idx]);
+      }
     }
+
+    return result;
   }
 
   /**

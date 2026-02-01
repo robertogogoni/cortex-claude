@@ -8,7 +8,7 @@
  * MCP Tool: mcp__plugin_episodic-memory_episodic-memory__search
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md#section-2.3.2
+ * @see Design: ../docs/design/memory-orchestrator.md#section-2.3.2
  */
 
 'use strict';
@@ -42,9 +42,28 @@ class EpisodicMemoryAdapter extends BaseAdapter {
     this.searchMode = config.searchMode || 'both';
     this.mcpCaller = config.mcpCaller || null;
 
+    // Early validation warning (not error - allow lazy injection)
+    if (!this.mcpCaller) {
+      console.warn(
+        '[EpisodicMemoryAdapter] No mcpCaller provided. ' +
+        'Queries will fail until mcpCaller is set via setMcpCaller().'
+      );
+    }
+
     // Result cache with TTL
     this._cache = new Map();
     this._cacheTTL = 5 * 60 * 1000;  // 5 minutes
+  }
+
+  /**
+   * Set the MCP caller function (allows late injection)
+   * @param {Function} mcpCaller - Function to call MCP tools
+   */
+  setMcpCaller(mcpCaller) {
+    if (typeof mcpCaller !== 'function') {
+      throw new Error('mcpCaller must be a function');
+    }
+    this.mcpCaller = mcpCaller;
   }
 
   /**
@@ -363,8 +382,20 @@ class EpisodicMemoryAdapter extends BaseAdapter {
 
     // Clean old entries if cache is too large
     if (this._cache.size > 100) {
-      const oldestKey = this._cache.keys().next().value;
-      this._cache.delete(oldestKey);
+      // Find the oldest entry by timestamp (not insertion order)
+      let oldestKey = null;
+      let oldestTime = Infinity;
+
+      for (const [key, entry] of this._cache) {
+        if (entry.timestamp < oldestTime) {
+          oldestTime = entry.timestamp;
+          oldestKey = key;
+        }
+      }
+
+      if (oldestKey) {
+        this._cache.delete(oldestKey);
+      }
     }
   }
 
@@ -373,6 +404,187 @@ class EpisodicMemoryAdapter extends BaseAdapter {
    */
   clearCache() {
     this._cache.clear();
+  }
+
+  // ---------------------------------------------------------------------------
+  // READ OPERATIONS (Full Conversation Access)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Read a full conversation by path
+   * Uses mcp__plugin_episodic-memory_episodic-memory__read
+   * @param {string} conversationPath - Path to conversation file
+   * @param {Object} [options]
+   * @param {number} [options.startLine] - Start line for pagination
+   * @param {number} [options.endLine] - End line for pagination
+   * @returns {Promise<{success: boolean, content?: string, error?: string}>}
+   */
+  async read(conversationPath, options = {}) {
+    try {
+      const params = {
+        path: conversationPath,
+      };
+
+      // Add pagination if specified
+      if (options.startLine) {
+        params.startLine = options.startLine;
+      }
+      if (options.endLine) {
+        params.endLine = options.endLine;
+      }
+
+      const response = await this._callMCPRead(params);
+
+      if (!response) {
+        return { success: false, error: 'No response from MCP' };
+      }
+
+      return {
+        success: true,
+        content: response.content || response,
+        path: conversationPath,
+        startLine: options.startLine,
+        endLine: options.endLine,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Show conversation details (alias for read with formatting info)
+   * @param {string} conversationPath - Path to conversation file
+   * @param {Object} [options]
+   * @param {number} [options.startLine] - Start line
+   * @param {number} [options.endLine] - End line
+   * @param {boolean} [options.includeMetadata=true] - Include metadata
+   * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
+   */
+  async show(conversationPath, options = {}) {
+    const result = await this.read(conversationPath, options);
+
+    if (!result.success) {
+      return result;
+    }
+
+    // Parse conversation content and extract metadata
+    const data = {
+      path: conversationPath,
+      content: result.content,
+      metadata: {},
+    };
+
+    if (options.includeMetadata !== false) {
+      data.metadata = this._extractConversationMetadata(result.content);
+    }
+
+    return { success: true, data };
+  }
+
+  /**
+   * Search and return full conversation context
+   * Combines search + read for enriched results
+   * @param {string | string[]} query - Search query
+   * @param {Object} [options]
+   * @param {number} [options.limit=5] - Number of results
+   * @param {number} [options.contextLines=50] - Lines of context per result
+   * @returns {Promise<Array<{record: MemoryRecord, context: string}>>}
+   */
+  async searchWithContext(query, options = {}) {
+    const limit = options.limit || 5;
+    const contextLines = options.contextLines || 50;
+
+    // First, search for relevant conversations
+    const context = { tags: Array.isArray(query) ? query : [query] };
+    const searchResults = await this.query(context, { limit });
+
+    // Then read context for each result
+    const enrichedResults = [];
+
+    for (const record of searchResults) {
+      try {
+        const readResult = await this.read(record.id, {
+          endLine: contextLines,
+        });
+
+        enrichedResults.push({
+          record,
+          context: readResult.success ? readResult.content : null,
+        });
+      } catch {
+        enrichedResults.push({
+          record,
+          context: null,
+        });
+      }
+    }
+
+    return enrichedResults;
+  }
+
+  /**
+   * Call the Episodic Memory read MCP tool
+   * @private
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  async _callMCPRead(params) {
+    if (this.mcpCaller) {
+      return this.mcpCaller('mcp__plugin_episodic-memory_episodic-memory__read', params);
+    }
+
+    throw new Error(
+      'EpisodicMemoryAdapter requires mcpCaller to be set. ' +
+      'The QueryOrchestrator should provide this during initialization.'
+    );
+  }
+
+  /**
+   * Extract metadata from conversation content
+   * @private
+   * @param {string} content
+   * @returns {Object}
+   */
+  _extractConversationMetadata(content) {
+    if (!content) return {};
+
+    const lines = content.split('\n');
+    const metadata = {
+      lineCount: lines.length,
+      messageCount: 0,
+      technologies: [],
+      topics: [],
+    };
+
+    // Count messages (assuming JSONL format)
+    for (const line of lines) {
+      if (line.trim()) {
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed.role || parsed.type) {
+            metadata.messageCount++;
+          }
+        } catch {
+          // Not JSON, just a text line
+        }
+      }
+    }
+
+    // Extract technologies mentioned
+    const techPatterns = [
+      'javascript', 'typescript', 'python', 'node', 'react',
+      'git', 'docker', 'kubernetes', 'linux', 'bash',
+      'claude', 'mcp', 'hook', 'plugin',
+    ];
+
+    const lowerContent = content.toLowerCase();
+    for (const tech of techPatterns) {
+      if (lowerContent.includes(tech)) {
+        metadata.technologies.push(tech);
+      }
+    }
+
+    return metadata;
   }
 }
 

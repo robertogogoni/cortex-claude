@@ -270,14 +270,8 @@ async function seedFromClaudeMd(options) {
 
   try {
     const { ClaudeMdAdapter } = require('../adapters/claudemd-adapter.cjs');
-    const adapter = new ClaudeMdAdapter({
-      paths: [
-        '~/.claude/CLAUDE.md',
-        '~/claude-cross-machine-sync/CLAUDE.md',
-        '.claude/CLAUDE.md',
-        './CLAUDE.md',
-      ],
-    });
+    // Uses default paths from adapter - users can configure additional paths
+    const adapter = new ClaudeMdAdapter();
 
     // Query with empty context to get all records
     const records = await adapter.query({});

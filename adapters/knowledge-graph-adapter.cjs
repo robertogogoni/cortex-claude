@@ -11,7 +11,7 @@
  * - mcp__memory__open_nodes: Get specific nodes by name
  *
  * @version 1.1.0
- * @see Design: ~/.claude/dev/skill-activator/docs/plans/2026-01-26-claude-memory-orchestrator-design.md#section-2.3.3
+ * @see Design: ../docs/design/memory-orchestrator.md#section-2.3.3
  */
 
 'use strict';
@@ -370,6 +370,265 @@ class KnowledgeGraphAdapter extends BaseAdapter {
    */
   clearCache() {
     this._cache.clear();
+  }
+
+  /**
+   * Set the MCP caller function (allows late injection)
+   * @param {Function} mcpCaller - Function to call MCP tools
+   */
+  setMcpCaller(mcpCaller) {
+    if (typeof mcpCaller !== 'function') {
+      throw new Error('mcpCaller must be a function');
+    }
+    this.mcpCaller = mcpCaller;
+  }
+
+  // ---------------------------------------------------------------------------
+  // WRITE OPERATIONS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Knowledge Graph adapter supports write operations
+   * @returns {boolean}
+   */
+  supportsWrite() {
+    return true;
+  }
+
+  /**
+   * Write a new entity to the knowledge graph
+   * Maps MemoryRecord to knowledge graph entity format
+   * @param {import('./base-adapter.cjs').MemoryRecord} record - Record to write
+   * @param {import('./base-adapter.cjs').WriteOptions} [options] - Write options
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async write(record, options = {}) {
+    return this._executeWrite(async () => {
+      // Convert MemoryRecord to entity format
+      const entity = {
+        name: record.id || record.summary?.slice(0, 50) || 'unnamed',
+        entityType: this._mapMemoryTypeToEntityType(record.type),
+        observations: record.content ? [record.content] : [],
+      };
+
+      // Add tags as observations if present
+      if (record.tags?.length) {
+        entity.observations.push(`Tags: ${record.tags.join(', ')}`);
+      }
+
+      // Create the entity
+      const result = await this.createEntities([entity]);
+      return result;
+    });
+  }
+
+  /**
+   * Update an existing entity by adding observations
+   * @param {string} id - Entity name (from record.id, e.g., "kg:entity-name")
+   * @param {Partial<import('./base-adapter.cjs').MemoryRecord>} updates - Fields to update
+   * @param {import('./base-adapter.cjs').WriteOptions} [options] - Write options
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async update(id, updates, options = {}) {
+    return this._executeWrite(async () => {
+      // Extract entity name from ID
+      const entityName = id.replace(/^kg:/, '');
+
+      // Convert updates to observations
+      const observations = [];
+
+      if (updates.content) {
+        observations.push(updates.content);
+      }
+
+      if (updates.summary) {
+        observations.push(`Summary: ${updates.summary}`);
+      }
+
+      if (updates.tags?.length) {
+        observations.push(`Tags: ${updates.tags.join(', ')}`);
+      }
+
+      if (observations.length === 0) {
+        return { success: false, error: 'No observations to add' };
+      }
+
+      return await this.addObservations(entityName, observations);
+    });
+  }
+
+  /**
+   * Delete an entity from the knowledge graph
+   * @param {string} id - Entity name to delete
+   * @param {import('./base-adapter.cjs').WriteOptions} [options] - Write options
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async delete(id, options = {}) {
+    return this._executeWrite(async () => {
+      // Extract entity name from ID
+      const entityName = id.replace(/^kg:/, '');
+
+      return await this.deleteEntities([entityName]);
+    });
+  }
+
+  /**
+   * Create multiple entities in the knowledge graph
+   * @param {Array<{name: string, entityType: string, observations: string[]}>} entities
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async createEntities(entities) {
+    try {
+      await this._callMCP('mcp__memory__create_entities', { entities });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        affectedCount: entities.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Create relations between entities
+   * @param {Array<{from: string, to: string, relationType: string}>} relations
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async createRelations(relations) {
+    try {
+      await this._callMCP('mcp__memory__create_relations', { relations });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        affectedCount: relations.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Add observations to an existing entity
+   * @param {string} entityName - Entity name
+   * @param {string[]} contents - Observation contents to add
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async addObservations(entityName, contents) {
+    try {
+      await this._callMCP('mcp__memory__add_observations', {
+        observations: [{
+          entityName,
+          contents,
+        }],
+      });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        id: `kg:${entityName}`,
+        affectedCount: contents.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Delete entities from the knowledge graph
+   * @param {string[]} entityNames - Entity names to delete
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async deleteEntities(entityNames) {
+    try {
+      await this._callMCP('mcp__memory__delete_entities', {
+        entityNames,
+      });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        affectedCount: entityNames.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Delete relations from the knowledge graph
+   * @param {Array<{from: string, to: string, relationType: string}>} relations
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async deleteRelations(relations) {
+    try {
+      await this._callMCP('mcp__memory__delete_relations', { relations });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        affectedCount: relations.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Delete specific observations from an entity
+   * @param {string} entityName - Entity name
+   * @param {string[]} observations - Observation strings to delete
+   * @returns {Promise<import('./base-adapter.cjs').WriteResult>}
+   */
+  async deleteObservations(entityName, observations) {
+    try {
+      await this._callMCP('mcp__memory__delete_observations', {
+        deletions: [{
+          entityName,
+          observations,
+        }],
+      });
+
+      // Clear cache after write
+      this.clearCache();
+
+      return {
+        success: true,
+        affectedCount: observations.length,
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Map memory type to knowledge graph entity type
+   * @private
+   * @param {import('./base-adapter.cjs').MemoryType} type
+   * @returns {string}
+   */
+  _mapMemoryTypeToEntityType(type) {
+    const mapping = {
+      'learning': 'Learning',
+      'pattern': 'Pattern',
+      'skill': 'Skill',
+      'correction': 'Correction',
+      'preference': 'Preference',
+    };
+
+    return mapping[type] || 'Learning';
   }
 }
 
