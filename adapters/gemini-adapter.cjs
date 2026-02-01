@@ -185,7 +185,8 @@ class GeminiAdapter extends BaseAdapter {
    * @returns {import('./base-adapter.cjs').MemoryRecord | null}
    */
   normalize(raw) {
-    if (!raw) return null;
+    // Validate required fields
+    if (!raw || !raw.sessionId || !raw.fileName) return null;
 
     // Determine type and confidence from file name
     const config = FILE_TYPE_CONFIG[raw.fileName] || {
@@ -321,13 +322,11 @@ class GeminiAdapter extends BaseAdapter {
           }
         }
 
-        if (files.length > 0 || true) {
-          // Include session even if empty (for count)
-          sessions.push({
-            uuid: sessionUuid,
-            files,
-          });
-        }
+        // Always include session (even if empty) for accurate count
+        sessions.push({
+          uuid: sessionUuid,
+          files,
+        });
       }
     } catch {
       // Directory doesn't exist or can't be read
