@@ -94,6 +94,19 @@ class SonnetThinker {
       path.join(this.basePath, 'data', 'memories', 'insights.jsonl')
     );
 
+    // Memory tier stores for consolidation
+    this.workingStore = new JSONLStore(
+      path.join(this.basePath, 'data', 'memories', 'working.jsonl')
+    );
+
+    this.shortTermStore = new JSONLStore(
+      path.join(this.basePath, 'data', 'memories', 'short-term.jsonl')
+    );
+
+    this.longTermStore = new JSONLStore(
+      path.join(this.basePath, 'data', 'memories', 'long-term.jsonl')
+    );
+
     // Track whether stores are loaded (with promise for race condition safety)
     this._storesLoaded = false;
     this._loadingPromise = null;
@@ -123,15 +136,23 @@ class SonnetThinker {
       this._loadingPromise = (async () => {
         try {
           // Load stores in parallel for better performance
-          const [learningsResult, insightsResult] = await Promise.all([
+          const [learningsResult, insightsResult, workingResult, shortTermResult, longTermResult] = await Promise.all([
             this.learningsStore.load(),
             this.insightsStore.load(),
+            this.workingStore.load(),
+            this.shortTermStore.load(),
+            this.longTermStore.load(),
           ]);
 
           // Log any load issues (non-fatal)
           if (!learningsResult.success || !insightsResult.success) {
             process.stderr.write(
               `[SonnetThinker] Store load warning: learnings=${learningsResult.success}, insights=${insightsResult.success}\n`
+            );
+          }
+          if (!workingResult.success || !shortTermResult.success || !longTermResult.success) {
+            process.stderr.write(
+              `[SonnetThinker] Tier store load warning: working=${workingResult.success}, short-term=${shortTermResult.success}, long-term=${longTermResult.success}\n`
             );
           }
 
@@ -521,17 +542,123 @@ Please analyze for consolidation opportunities.`;
     }
 
     // Apply changes if not dry run
-    let applied = { duplicatesRemoved: 0, memoriesMerged: 0, outdatedRemoved: 0 };
+    let applied = { duplicatesRemoved: 0, memoriesMerged: 0, outdatedRemoved: 0, errors: [] };
 
     if (!dryRun) {
-      // TODO: Implement actual storage modifications
-      // For now, just report what would be done
-      applied = {
-        duplicatesRemoved: analysis.duplicates?.length || 0,
-        memoriesMerged: analysis.merges?.length || 0,
-        outdatedRemoved: analysis.outdated?.length || 0,
-        note: 'Storage modification not yet implemented - showing analysis only',
-      };
+      // Ensure stores are loaded before modifications
+      await this._ensureStoresLoaded();
+
+      // Build a map of memory ID to its source store for efficient lookup
+      const memoryStoreMap = new Map();
+      for (const record of this.longTermStore.getAll()) {
+        if (record && record.id) memoryStoreMap.set(record.id, { store: this.longTermStore, record });
+      }
+      for (const record of this.shortTermStore.getAll()) {
+        if (record && record.id) memoryStoreMap.set(record.id, { store: this.shortTermStore, record });
+      }
+      for (const record of this.workingStore.getAll()) {
+        if (record && record.id) memoryStoreMap.set(record.id, { store: this.workingStore, record });
+      }
+
+      // Process duplicates: soft-delete all but keep the first (newest wins in JSONL)
+      for (const duplicate of (analysis.duplicates || [])) {
+        const ids = duplicate.ids || [];
+        if (ids.length < 2) continue;
+
+        // Keep the first, delete the rest
+        for (let i = 1; i < ids.length; i++) {
+          const entry = memoryStoreMap.get(ids[i]);
+          if (entry) {
+            try {
+              await entry.store.softDelete(ids[i]);
+              applied.duplicatesRemoved++;
+            } catch (e) {
+              applied.errors.push({ op: 'duplicate-delete', id: ids[i], error: e.message });
+            }
+          }
+        }
+      }
+
+      // Process merges: create merged record, soft-delete originals
+      for (const merge of (analysis.merges || [])) {
+        const ids = merge.ids || [];
+        if (ids.length < 2 || !merge.mergedContent) continue;
+
+        // Get the first original record to preserve metadata
+        const firstEntry = memoryStoreMap.get(ids[0]);
+        if (!firstEntry) continue;
+
+        try {
+          // Create new merged record in long-term (consolidated content should persist)
+          const mergedRecord = {
+            id: `merged_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            type: firstEntry.record.type || 'merged',
+            content: merge.mergedContent,
+            summary: merge.mergedContent.substring(0, 100),
+            tags: [...new Set((firstEntry.record.tags || []).concat(['consolidated']))],
+            status: 'active',
+            mergedFrom: ids,
+            mergeReason: merge.reason,
+            projectHash: firstEntry.record.projectHash || null,
+            intent: firstEntry.record.intent || 'general',
+            sourceSessionId: 'consolidation',
+            sourceTimestamp: new Date().toISOString(),
+            extractionConfidence: 0.9,
+            usageCount: 0,
+            usageSuccessRate: 0.5,
+            decayScore: 1,
+          };
+
+          await this.longTermStore.append(mergedRecord);
+
+          // Soft-delete all originals
+          for (const id of ids) {
+            const entry = memoryStoreMap.get(id);
+            if (entry) {
+              await entry.store.softDelete(id);
+            }
+          }
+
+          applied.memoriesMerged++;
+        } catch (e) {
+          applied.errors.push({ op: 'merge', ids, error: e.message });
+        }
+      }
+
+      // Process outdated: soft-delete
+      for (const outdated of (analysis.outdated || [])) {
+        const id = outdated.id;
+        if (!id) continue;
+
+        const entry = memoryStoreMap.get(id);
+        if (entry) {
+          try {
+            await entry.store.softDelete(id);
+            applied.outdatedRemoved++;
+          } catch (e) {
+            applied.errors.push({ op: 'outdated-delete', id, error: e.message });
+          }
+        }
+      }
+
+      // Compact stores to remove deleted records if we made significant changes
+      const totalChanges = applied.duplicatesRemoved + applied.memoriesMerged + applied.outdatedRemoved;
+      if (totalChanges >= 5) {
+        try {
+          await Promise.all([
+            this.workingStore.compact({ removeDeleted: true }),
+            this.shortTermStore.compact({ removeDeleted: true }),
+            this.longTermStore.compact({ removeDeleted: true }),
+          ]);
+        } catch (e) {
+          applied.errors.push({ op: 'compact', error: e.message });
+        }
+      }
+
+      // Remove errors array if empty for cleaner output
+      if (applied.errors.length === 0) {
+        delete applied.errors;
+      }
     }
 
     const duration = Date.now() - startTime;

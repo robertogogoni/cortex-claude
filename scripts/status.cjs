@@ -36,7 +36,7 @@ function formatNumber(num) {
 
 async function showStatus() {
   console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║     Cortex - Claude's Cognitive Layer - Status (v1.1.0)           ║');
+  console.log('║     Cortex - Claude\'s Cognitive Layer - Status (v2.0.0)          ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
   console.log();
 

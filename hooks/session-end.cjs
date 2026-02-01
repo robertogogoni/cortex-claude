@@ -5,12 +5,17 @@
  * This hook runs at the end of each Claude Code session.
  * It extracts learnings and resolves pending decisions.
  *
- * Environment variables:
- * - CORTEX_WORKING_DIR: Current working directory
- * - CORTEX_SESSION_ID: Current session ID
- * - CORTEX_TRANSCRIPT_PATH: Path to conversation transcript
+ * Input: JSON via stdin with structure:
+ *   {
+ *     "session_id": "abc123",
+ *     "transcript_path": "~/.claude/projects/.../session-id.jsonl",
+ *     "cwd": "/path/to/project",
+ *     "hook_event_name": "SessionEnd",
+ *     "reason": "exit"
+ *   }
  *
- * Input: Conversation transcript via stdin or file
+ * The transcript_path points to a JSONL file with conversation messages.
+ *
  * Output: JSON with extraction results
  */
 
@@ -75,14 +80,20 @@ class SessionEndHook {
 
   /**
    * Execute the session end hook
-   * @param {Object} input
-   * @param {Object[]} input.messages - Conversation messages
+   * @param {Object} input - Hook input from stdin JSON
+   * @param {string} input.session_id - Session identifier
+   * @param {string} input.transcript_path - Path to transcript JSONL file
+   * @param {string} input.cwd - Working directory
+   * @param {string} input.hook_event_name - Should be "SessionEnd"
+   * @param {string} input.reason - Exit reason
+   * @param {Object[]} input.messages - Optional pre-loaded messages
    * @returns {Promise<Object>}
    */
   async execute(input = {}) {
     const startTime = Date.now();
-    const sessionId = process.env.CORTEX_SESSION_ID || generateId();
-    const workingDir = process.env.CORTEX_WORKING_DIR || process.cwd();
+    const sessionId = input.session_id || generateId();
+    const workingDir = input.cwd || process.cwd();
+    const transcriptPath = input.transcript_path || null;
 
     // Check if enabled
     if (!this.config.get('sessionEnd.enabled')) {
@@ -95,8 +106,8 @@ class SessionEndHook {
     }
 
     try {
-      // Get conversation messages
-      const messages = input.messages || await this._loadMessages();
+      // Get conversation messages from transcript file
+      const messages = input.messages || await this._loadMessages(transcriptPath);
 
       if (!messages || messages.length === 0) {
         return {
@@ -110,6 +121,9 @@ class SessionEndHook {
       if (this.lads && !this.lads.initialized) {
         await this.lads.initialize();
       }
+
+      // Update context analyzer with correct working directory from hook input
+      this.contextAnalyzer.workingDir = workingDir;
 
       // Analyze context
       const context = this.contextAnalyzer.analyze({
@@ -163,49 +177,52 @@ class SessionEndHook {
   }
 
   /**
-   * Load messages from transcript file or stdin
+   * Load messages from transcript file
+   * @param {string} transcriptPath - Path to transcript JSONL file (may contain ~)
    * @returns {Promise<Object[]>}
    */
-  async _loadMessages() {
-    // Try transcript file first
-    const transcriptPath = process.env.CORTEX_TRANSCRIPT_PATH;
-    if (transcriptPath && fs.existsSync(transcriptPath)) {
-      try {
-        const content = fs.readFileSync(transcriptPath, 'utf8');
-        return this._parseTranscript(content);
-      } catch (error) {
-        console.error('[SessionEnd] Failed to load transcript:', error.message);
-      }
+  async _loadMessages(transcriptPath) {
+    if (!transcriptPath) {
+      return [];
     }
 
-    // Try stdin
+    // Expand ~ to home directory
+    const expandedPath = transcriptPath.replace(/^~/, process.env.HOME || '');
+
+    if (!fs.existsSync(expandedPath)) {
+      console.error('[SessionEnd] Transcript file not found:', expandedPath);
+      return [];
+    }
+
     try {
-      const stdin = await this._readStdin();
-      if (stdin) {
-        return this._parseTranscript(stdin);
-      }
-    } catch {
-      // No stdin available
+      const content = fs.readFileSync(expandedPath, 'utf8');
+      return this._parseTranscript(content);
+    } catch (error) {
+      console.error('[SessionEnd] Failed to load transcript:', error.message);
+      return [];
     }
-
-    return [];
   }
 
   /**
-   * Read from stdin with timeout
-   * @returns {Promise<string>}
+   * Read hook input JSON from stdin
+   * @returns {Promise<Object>} Parsed hook input object
    */
   _readStdin() {
     return new Promise((resolve, reject) => {
       // Don't block if stdin is not piped
       if (process.stdin.isTTY) {
-        resolve('');
+        resolve({});
         return;
       }
 
       let data = '';
       const timeout = setTimeout(() => {
-        resolve(data);
+        // Timeout - try to parse what we have
+        try {
+          resolve(data ? JSON.parse(data) : {});
+        } catch {
+          resolve({});
+        }
       }, 1000);
 
       process.stdin.setEncoding('utf8');
@@ -214,7 +231,12 @@ class SessionEndHook {
       });
       process.stdin.on('end', () => {
         clearTimeout(timeout);
-        resolve(data);
+        try {
+          resolve(data ? JSON.parse(data) : {});
+        } catch (parseError) {
+          console.error('[SessionEnd] Failed to parse stdin JSON:', parseError.message);
+          resolve({});
+        }
       });
       process.stdin.on('error', err => {
         clearTimeout(timeout);
@@ -489,7 +511,16 @@ class SessionEndHook {
 
 async function main() {
   const hook = new SessionEndHook();
-  const result = await hook.execute();
+
+  // Read hook input from stdin (Claude Code passes JSON with session info)
+  const hookInput = await hook._readStdin();
+
+  // Debug: log received input structure (to stderr so it doesn't interfere with JSON output)
+  if (process.env.CORTEX_DEBUG) {
+    console.error('[SessionEnd] Received hook input:', JSON.stringify(hookInput, null, 2));
+  }
+
+  const result = await hook.execute(hookInput);
 
   // Output JSON result
   console.log(JSON.stringify(result, null, 2));
