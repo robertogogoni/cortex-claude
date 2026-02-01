@@ -60,10 +60,26 @@ class SessionStartHook {
     this.basePath = options.basePath || BASE_PATH;
     this.config = options.config || getConfigManager();
 
+    // NOTE: SessionStart hooks run as standalone processes without MCP access.
+    // MCP adapters (episodic-memory, knowledge-graph) are explicitly disabled here.
+    // Use file-based adapters only: JSONL, CLAUDE.md, Gemini, Warp SQLite.
+    // For MCP-based memories, query them during the conversation using:
+    //   - mcp__plugin_episodic-memory_episodic-memory__search
+    //   - mcp__memory__search_nodes
     this.orchestrator = new QueryOrchestrator({
       basePath: this.basePath,
       tokenBudget: this.config.get('sessionStart.slots') || {},
       workingDir: process.env.CORTEX_WORKING_DIR || process.cwd(),
+      // Disable MCP adapters - they require mcpCaller which isn't available in hooks
+      adapterConfig: {
+        episodicMemory: { enabled: false },
+        knowledgeGraph: { enabled: false },
+        // File-based adapters remain enabled (they work without MCP)
+        jsonl: { enabled: true },
+        claudeMd: { enabled: true },
+        gemini: { enabled: true },
+        warp: { enabled: true },
+      },
     });
 
     // Initialize formatter with config
@@ -388,8 +404,24 @@ async function main() {
     }
   }
 
-  // Output JSON result to stdout (for Claude context injection)
-  console.log(JSON.stringify(result, null, 2));
+  // Output in Claude Code hook format
+  // The hook output format requires hookSpecificOutput.additionalContext
+  const hookOutput = {
+    hookSpecificOutput: {
+      hookEventName: 'SessionStart',
+      additionalContext: result.injection || '',
+    },
+    // Include Cortex-specific metadata for debugging (not used by Claude Code)
+    _cortex: {
+      success: result.success,
+      enabled: result.enabled,
+      wipDetected: result.wipDetected,
+      wipItems: result.wipItems,
+      stats: result.stats,
+    },
+  };
+
+  console.log(JSON.stringify(hookOutput, null, 2));
 }
 
 // Run if executed directly

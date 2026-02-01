@@ -42,8 +42,9 @@ class EpisodicMemoryAdapter extends BaseAdapter {
     this.searchMode = config.searchMode || 'both';
     this.mcpCaller = config.mcpCaller || null;
 
-    // Early validation warning (not error - allow lazy injection)
-    if (!this.mcpCaller) {
+    // Only warn if adapter is enabled but mcpCaller is missing
+    // (When disabled via config, the warning is unnecessary noise)
+    if (this.enabled && !this.mcpCaller) {
       console.warn(
         '[EpisodicMemoryAdapter] No mcpCaller provided. ' +
         'Queries will fail until mcpCaller is set via setMcpCaller().'
