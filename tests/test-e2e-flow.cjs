@@ -218,21 +218,23 @@ async function testSessionStart() {
     return results;
   }
 
-  // Check for injection field
-  results.hasInjectionField = output.hasOwnProperty('injection');
-  printResult('Has injection field', results.hasInjectionField,
-    results.hasInjectionField ? `Length: ${output.injection?.length || 0} chars` : 'Missing');
+  // Check for injection field (new format: hookSpecificOutput.additionalContext)
+  const additionalContext = output.hookSpecificOutput?.additionalContext;
+  results.hasInjectionField = !!additionalContext && additionalContext.length > 0;
+  printResult('Has additionalContext', results.hasInjectionField,
+    results.hasInjectionField ? `Length: ${additionalContext?.length || 0} chars` : 'Missing');
 
-  // Check success/enabled status
-  const hookSuccess = output.success === true;
-  const hookEnabled = output.enabled === true;
-  printResult('Hook success status', hookSuccess, output.success === false ? `Error: ${output.error}` : '');
-  printResult('Hook enabled', hookEnabled, !hookEnabled && output.stats?.reason ? output.stats.reason : '');
+  // Check success/enabled status (new format: _cortex object)
+  const cortex = output._cortex || {};
+  const hookSuccess = cortex.success === true;
+  const hookEnabled = cortex.enabled === true;
+  printResult('Hook success status', hookSuccess, cortex.success === false ? `Error: ${cortex.error}` : '');
+  printResult('Hook enabled', hookEnabled, !hookEnabled && cortex.stats?.reason ? cortex.stats.reason : '');
 
-  // Check adapter results from stats
-  if (output.stats?.bySource) {
+  // Check adapter results from stats (new format: _cortex.stats)
+  if (cortex.stats?.bySource) {
     printInfo('Adapters queried:');
-    for (const [source, count] of Object.entries(output.stats.bySource)) {
+    for (const [source, count] of Object.entries(cortex.stats.bySource)) {
       results.adaptersQueried.push(source);
       results.adapterResults[source] = count;
       console.log(c(`       - ${source}: ${count} records`, 'dim'));
@@ -242,23 +244,26 @@ async function testSessionStart() {
   }
 
   // Summary stats
-  if (output.stats) {
-    printInfo(`Total memories queried: ${output.stats.memoriesQueried || 0}`);
-    printInfo(`Total memories selected: ${output.stats.memoriesSelected || 0}`);
-    printInfo(`Estimated tokens: ${output.stats.estimatedTokens || 0}`);
-    printInfo(`Duration: ${output.stats.duration || 0}ms`);
+  if (cortex.stats) {
+    printInfo(`Total memories queried: ${cortex.stats.memoriesQueried || 0}`);
+    printInfo(`Total memories selected: ${cortex.stats.memoriesSelected || 0}`);
+    printInfo(`Estimated tokens: ${cortex.stats.estimatedTokens || 0}`);
+    printInfo(`Duration: ${cortex.stats.duration || 0}ms`);
   }
 
   // Check which adapters actually returned data
+  // Note: Adapter sources may have format like "jsonl:working", "jsonl:long-term", "gemini", "warp-sqlite"
   printInfo('Adapter availability summary:');
-  const adaptersExpected = ['jsonl', 'claudemd', 'episodic-memory', 'knowledge-graph', 'gemini', 'warp'];
-  for (const adapter of adaptersExpected) {
-    const found = results.adaptersQueried.includes(adapter);
-    const count = results.adapterResults[adapter] || 0;
-    if (found) {
-      console.log(c(`       ${icons.check} ${adapter}: ${count} records`, 'green'));
+  const adapterPrefixes = ['jsonl', 'claudemd', 'episodic-memory', 'knowledge-graph', 'gemini', 'warp'];
+  for (const prefix of adapterPrefixes) {
+    // Check if any source starts with this prefix (e.g., "jsonl:working" starts with "jsonl")
+    const matchingSources = results.adaptersQueried.filter(s => s.startsWith(prefix) || s === prefix);
+    const totalCount = matchingSources.reduce((sum, s) => sum + (results.adapterResults[s] || 0), 0);
+    if (matchingSources.length > 0) {
+      const sources = matchingSources.map(s => `${s}:${results.adapterResults[s]}`).join(', ');
+      console.log(c(`       ${icons.check} ${prefix}: ${totalCount} records (${sources})`, 'green'));
     } else {
-      console.log(c(`       ${icons.cross} ${adapter}: not queried or no results`, 'dim'));
+      console.log(c(`       ${icons.cross} ${prefix}: not queried or no results`, 'dim'));
     }
   }
 
