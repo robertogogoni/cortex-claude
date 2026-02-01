@@ -5,8 +5,9 @@
   "main": "index.cjs",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs",
+    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs && node tests/test-sqlite-store.cjs",
     "test:core": "node tests/test-core.cjs",
+    "test:sqlite": "node tests/test-sqlite-store.cjs",
     "test:hooks": "node tests/test-hooks.cjs",
     "test:lads": "node tests/test-lads.cjs",
     "install-hooks": "node scripts/install-hooks.cjs",
@@ -58,6 +59,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@modelcontextprotocol/sdk": "^1.25.3"
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "better-sqlite3": "^12.6.2"
   }
 }
