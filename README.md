@@ -824,6 +824,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Inspired by research on autonomous AI learning (Voyager, CASCADE, SEAgent)
 - LADS principles adapted from continuous improvement methodologies
 - Vector search powered by [hnswlib-node](https://github.com/yoshoku/hnswlib-node) and [Transformers.js](https://github.com/xenova/transformers.js)
+- Models: Claude 3.5 Haiku and Claude Sonnet 4
 
 ---
 

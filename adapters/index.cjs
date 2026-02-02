@@ -259,10 +259,12 @@ function createDefaultRegistry(config = {}) {
   registry.register(new JSONLAdapter({
     basePath,
     sources: config.adapters?.jsonl?.sources || [
-      { name: 'working', path: 'data/memories/working.jsonl', maxAge: 24 * 60 * 60 * 1000 },
-      { name: 'short-term', path: 'data/memories/short-term.jsonl', maxAge: 7 * 24 * 60 * 60 * 1000 },
-      { name: 'long-term', path: 'data/memories/long-term.jsonl' },
-      { name: 'skills', path: 'data/skills/index.jsonl' },
+      { name: 'working', path: 'data/memories/working.jsonl', maxAge: 24 * 60 * 60 * 1000, priority: 1.0 },
+      { name: 'short-term', path: 'data/memories/short-term.jsonl', maxAge: 7 * 24 * 60 * 60 * 1000, priority: 0.9 },
+      { name: 'long-term', path: 'data/memories/long-term.jsonl', priority: 0.7 },
+      { name: 'insights', path: 'data/memories/insights.jsonl', priority: 0.85 },
+      { name: 'learnings', path: 'data/memories/learnings.jsonl', priority: 0.8 },
+      { name: 'skills', path: 'data/skills/index.jsonl', priority: 0.8 },
     ],
   }));
 

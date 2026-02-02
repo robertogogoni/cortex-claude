@@ -13,7 +13,7 @@
  *   - cortex__learn: Extract and store insight (Sonnet)
  *   - cortex__consolidate: Merge/dedupe memories (Sonnet)
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 'use strict';
@@ -87,6 +87,7 @@ async function main() {
     'cortex__infer': { model: 'Sonnet', estimatedMs: 2000 },
     'cortex__learn': { model: 'Sonnet', estimatedMs: 2000 },
     'cortex__consolidate': { model: 'Sonnet', estimatedMs: 5000 },
+    'cortex__health': { model: 'Local', estimatedMs: 50 },
   };
 
   // Log to stderr to not interfere with stdio transport
@@ -258,8 +259,90 @@ async function main() {
           }
         }
       }
+    },
+
+    // System tools
+    {
+      name: 'cortex__health',
+      description: 'Check Cortex system health and get statistics about all memory adapters, rate limits, and system resources.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeStats: {
+            type: 'boolean',
+            description: 'Include detailed adapter statistics (default: true)',
+            default: true
+          }
+        }
+      }
     }
   ];
+
+  // ==========================================================================
+  // HEALTH CHECK FUNCTION
+  // ==========================================================================
+
+  /**
+   * Get system health status and statistics
+   * @param {boolean} includeStats - Include detailed adapter statistics
+   * @returns {Promise<Object>}
+   */
+  async function getHealthStatus(includeStats = true) {
+    const status = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      uptime: process.uptime(),
+      memory: {
+        heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        external: Math.round(process.memoryUsage().external / 1024 / 1024),
+        unit: 'MB',
+      },
+      rateLimits: rateLimiter.getStatus(),
+      auditLog: {
+        enabled: auditLogger.isEnabled(),
+        sessionCalls: auditLogger.getSessionStats()?.totalCalls || 0,
+      },
+    };
+
+    if (includeStats) {
+      // Get adapter stats from haiku worker's orchestrator
+      try {
+        const orchestratorStats = haiku.orchestrator?.registry
+          ? await haiku.orchestrator.registry.getAllStats()
+          : {};
+        status.adapters = orchestratorStats;
+      } catch (error) {
+        status.adapters = { error: error.message };
+      }
+
+      // Check memory file existence
+      const memoryFiles = {
+        working: path.join(BASE_PATH, 'data/memories/working.jsonl'),
+        shortTerm: path.join(BASE_PATH, 'data/memories/short-term.jsonl'),
+        longTerm: path.join(BASE_PATH, 'data/memories/long-term.jsonl'),
+        insights: path.join(BASE_PATH, 'data/insights/insights.jsonl'),
+        learnings: path.join(BASE_PATH, 'data/learnings/learnings.jsonl'),
+      };
+
+      status.files = {};
+      for (const [name, filePath] of Object.entries(memoryFiles)) {
+        try {
+          const stats = fs.statSync(filePath);
+          status.files[name] = {
+            exists: true,
+            sizeKb: Math.round(stats.size / 1024),
+            modifiedAt: stats.mtime.toISOString(),
+          };
+        } catch {
+          status.files[name] = { exists: false };
+        }
+      }
+    }
+
+    return status;
+  }
 
   // ==========================================================================
   // RESOURCE DEFINITIONS
@@ -828,6 +911,10 @@ This provides a comprehensive project briefing.`
           case 'cortex__consolidate':
             validatedArgs = validateConsolidateArgs(args);
             break;
+          case 'cortex__health':
+            // Health check has minimal validation
+            validatedArgs = { includeStats: args?.includeStats !== false };
+            break;
           default:
             throw new CortexError('CORTEX_E202', { details: name });
         }
@@ -866,6 +953,11 @@ This provides a comprehensive project briefing.`
 
         case 'cortex__consolidate':
           result = await sonnet.consolidate(validatedArgs.scope, validatedArgs.type, validatedArgs.dryRun);
+          break;
+
+        case 'cortex__health':
+          // Health check - no AI model needed
+          result = await getHealthStatus(validatedArgs.includeStats);
           break;
 
         default:

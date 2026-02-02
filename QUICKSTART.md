@@ -74,4 +74,8 @@ Just ask naturally:
 
 ---
 
-📖 **Full docs:** [README.md](README.md)
+## More Documentation
+
+- [README.md](README.md) - Full overview
+- [docs/API.md](docs/API.md) - Complete API reference
+- [docs/EXAMPLES.md](docs/EXAMPLES.md) - Usage examples

@@ -113,6 +113,7 @@ class HybridSearch {
    * @param {boolean} [options.includeGlobal=true] - Include global memories when projectHash set
    * @param {string} [options.status='active'] - Filter by status
    * @param {string} [options.mode='hybrid'] - Search mode: 'hybrid'|'bm25'|'vector'
+   * @param {boolean} [options.verbose=false] - Enable timing logs
    * @returns {Promise<Array<SearchResult>>}
    *
    * @typedef {Object} SearchResult
@@ -126,6 +127,8 @@ class HybridSearch {
    */
   async search(query, options = {}) {
     const startTime = Date.now();
+    const timings = { bm25: 0, vector: 0, embedding: 0, fusion: 0 };
+    const verbose = options.verbose || false;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       throw new Error('Query must be a non-empty string');
@@ -142,13 +145,37 @@ class HybridSearch {
     let vectorResults = [];
 
     // Execute searches based on mode
-    if (mode === 'hybrid' || mode === 'bm25') {
-      bm25Results = this._bm25Search(query, prefetchK, filters);
-      this.stats.bm25Hits += bm25Results.length;
-    }
+    // OPTIMIZATION: Run BM25 and vector search in PARALLEL for hybrid mode
+    if (mode === 'hybrid') {
+      const bm25Start = Date.now();
+      const vectorStart = Date.now();
 
-    if (mode === 'hybrid' || mode === 'vector') {
+      // Start both searches concurrently
+      const [bm25, vector] = await Promise.all([
+        Promise.resolve(this._bm25Search(query, prefetchK, filters)),
+        this._vectorSearch(query, prefetchK, filters),
+      ]);
+
+      bm25Results = bm25;
+      vectorResults = vector;
+
+      timings.bm25 = Date.now() - bm25Start; // Note: timing is approximate for parallel
+      timings.vector = Date.now() - vectorStart;
+      this.stats.bm25Hits += bm25Results.length;
+      this.stats.vectorHits += vectorResults.length;
+
+      if (verbose) {
+        console.error(`[HybridSearch] BM25: ${bm25Results.length} results, Vector: ${vectorResults.length} results`);
+      }
+    } else if (mode === 'bm25') {
+      const bm25Start = Date.now();
+      bm25Results = this._bm25Search(query, prefetchK, filters);
+      timings.bm25 = Date.now() - bm25Start;
+      this.stats.bm25Hits += bm25Results.length;
+    } else if (mode === 'vector') {
+      const vectorStart = Date.now();
       vectorResults = await this._vectorSearch(query, prefetchK, filters);
+      timings.vector = Date.now() - vectorStart;
       this.stats.vectorHits += vectorResults.length;
     }
 
@@ -164,14 +191,16 @@ class HybridSearch {
 
     // Handle single-mode results
     if (mode === 'bm25') {
-      return this._finalizeResults(bm25Results, limit, startTime);
+      return this._finalizeResults(bm25Results, limit, startTime, timings);
     }
     if (mode === 'vector') {
-      return this._finalizeResults(vectorResults, limit, startTime);
+      return this._finalizeResults(vectorResults, limit, startTime, timings);
     }
 
     // Hybrid: RRF Fusion
+    const fusionStart = Date.now();
     const fused = this._rrfFusion(bm25Results, vectorResults);
+    timings.fusion = Date.now() - fusionStart;
     this.stats.fusedHits += fused.size;
 
     // Apply temporal decay
@@ -206,6 +235,11 @@ class HybridSearch {
 
     if (results.length === 0) {
       this.stats.emptyResults++;
+    }
+
+    // Attach timing info to results if verbose
+    if (options.verbose) {
+      console.error(`[HybridSearch] Total: ${latency}ms (BM25: ${timings.bm25}ms, Vector: ${timings.vector}ms, Fusion: ${timings.fusion}ms)`);
     }
 
     return results;
@@ -562,9 +596,10 @@ class HybridSearch {
    * @param {Array} results - Raw search results
    * @param {number} limit - Max results
    * @param {number} startTime - Search start timestamp
+   * @param {Object} timings - Timing breakdown
    * @returns {Array<SearchResult>}
    */
-  _finalizeResults(results, limit, startTime) {
+  _finalizeResults(results, limit, startTime, timings = {}) {
     const limited = results.slice(0, limit);
 
     // Apply temporal decay

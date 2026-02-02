@@ -13,7 +13,7 @@
  *
  * Cost: ~$3/1M tokens (~5-10 calls/session = ~$0.03/session)
  *
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 'use strict';
@@ -21,6 +21,7 @@
 const Anthropic = require('@anthropic-ai/sdk').default;
 const { QueryOrchestrator } = require('../hooks/query-orchestrator.cjs');
 const { JSONLStore } = require('../core/storage.cjs');
+const { getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
 const path = require('path');
 const fs = require('fs');
 
@@ -111,6 +112,10 @@ class SonnetThinker {
     this._storesLoaded = false;
     this._loadingPromise = null;
 
+    // Vector search provider for dual-write (lazy initialized)
+    this._vectorProvider = null;
+    this._vectorProviderInitializing = null;
+
     // Stats tracking with cost
     this.stats = {
       reflections: 0,
@@ -167,6 +172,53 @@ class SonnetThinker {
     }
 
     await this._loadingPromise;
+  }
+
+  /**
+   * Ensure vector search provider is initialized (lazy loading)
+   * @private
+   * @returns {Promise<VectorSearchProvider|null>}
+   */
+  async _ensureVectorProvider() {
+    // Already initialized
+    if (this._vectorProvider && this._vectorProvider.initialized) {
+      return this._vectorProvider;
+    }
+
+    // Prevent concurrent initialization
+    if (this._vectorProviderInitializing) {
+      return this._vectorProviderInitializing;
+    }
+
+    this._vectorProviderInitializing = (async () => {
+      try {
+        this._vectorProvider = getVectorSearchProvider({
+          basePath: this.basePath,
+        });
+
+        // Initialize if not already
+        if (!this._vectorProvider.initialized) {
+          const result = await this._vectorProvider.initialize();
+          if (!result.success) {
+            process.stderr.write(
+              `[SonnetThinker] VectorSearchProvider init warning: ${result.error}\n`
+            );
+            return null;
+          }
+        }
+
+        return this._vectorProvider;
+      } catch (error) {
+        process.stderr.write(
+          `[SonnetThinker] VectorSearchProvider init failed: ${error.message}\n`
+        );
+        return null;
+      } finally {
+        this._vectorProviderInitializing = null;
+      }
+    })();
+
+    return this._vectorProviderInitializing;
   }
 
   /**
@@ -428,21 +480,69 @@ Please analyze this insight for storage.`;
 
     // Store if quality is sufficient and not duplicate
     let stored = false;
+    let vectorStored = false;
+    let vectorId = null;
+
     if (analysis.quality >= 4 && !analysis.isDuplicate) {
+      const finalContent = analysis.enhancedInsight || insight;
+      const finalTags = [...new Set([...tags, ...(analysis.suggestedTags || [])])];
+      const timestamp = new Date().toISOString();
+
+      // Map type to MemoryStore memory_type (valid: observation, learning, pattern, skill, etc.)
+      const memoryTypeMap = {
+        'skill': 'skill',
+        'pattern': 'pattern',
+        'decision': 'decision',
+        'general': 'learning',
+        'insight': 'learning',
+      };
+      const memoryType = memoryTypeMap[type] || 'learning';
+
       const record = {
         id: `insight_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         type,
-        content: analysis.enhancedInsight || insight,
+        content: finalContent,
         originalInsight: insight,
         context,
-        tags: [...new Set([...tags, ...(analysis.suggestedTags || [])])],
+        tags: finalTags,
         quality: analysis.quality,
         priority: analysis.priority,
-        createdAt: new Date().toISOString(),
+        createdAt: timestamp,
       };
 
+      // 1. Write to JSONL store (existing behavior)
       await this.insightsStore.append(record);
       stored = true;
+
+      // 2. Write to vector store (new dual-write behavior)
+      try {
+        const vectorProvider = await this._ensureVectorProvider();
+        if (vectorProvider) {
+          const vectorResult = await vectorProvider.insert({
+            content: finalContent,
+            summary: context || finalContent.substring(0, 200),
+            memory_type: memoryType,
+            intent: 'learning',
+            tags: JSON.stringify(finalTags),
+            source: 'cortex-learn',
+            source_id: record.id,
+            project_hash: null, // Global insight
+            session_id: null,
+            extraction_confidence: analysis.quality / 10, // Normalize to 0-1
+            quality_score: analysis.quality / 10,
+          }, { generateEmbedding: true });
+
+          if (vectorResult.id) {
+            vectorStored = true;
+            vectorId = vectorResult.id;
+          }
+        }
+      } catch (vectorError) {
+        // Log but don't fail - JSONL write succeeded
+        process.stderr.write(
+          `[SonnetThinker] Vector write warning: ${vectorError.message}\n`
+        );
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -451,6 +551,8 @@ Please analyze this insight for storage.`;
       insight,
       analysis,
       stored,
+      vectorStored,
+      vectorId,
       stats: {
         duration,
       },

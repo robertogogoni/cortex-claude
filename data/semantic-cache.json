@@ -1,96 +1,553 @@
 {
   "entries": {
-    "88b35cf04283308062feffc06b8cc880": {
-      "timestamp": 1769998209465,
+    "36c4eb748139ba258bb2f025c4ac48ee": {
+      "timestamp": 1770013689078,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "implementation",
+          "confidence": 0.85,
+          "description": "Technical exploration of Cortex MCP (Massively Collaborative Platform) development process"
+        },
+        "keywords": {
+          "required": [
+            "cortex",
+            "mcp",
+            "development",
+            "implementation"
+          ],
+          "optional": [
+            "architecture",
+            "design",
+            "system",
+            "platform"
+          ],
+          "excluded": [
+            "consumer",
+            "marketing",
+            "unrelated"
+          ]
+        },
+        "concepts": [
+          "software architecture",
+          "collaborative systems",
+          "platform development",
+          "technical implementation"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query requires nuanced understanding of technical development context, semantic matching will capture broader conceptual relationships beyond exact keyword matching"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "13c9099cf666889f16620d35f84ea54e": {
+      "timestamp": 1770013797582,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.7,
+          "description": "Seeking current progress or details about cortex system implementation"
+        },
+        "keywords": {
+          "required": [
+            "cortex",
+            "implementation"
+          ],
+          "optional": [
+            "status",
+            "progress",
+            "current state"
+          ],
+          "excluded": [
+            "architecture",
+            "theoretical"
+          ]
+        },
+        "concepts": [
+          "system development",
+          "project tracking",
+          "implementation progress"
+        ],
+        "matchStrategy": {
+          "primary": "keyword",
+          "reasoning": "Query uses direct, specific terms indicating a focused information retrieval request about implementation status"
+        },
+        "source": "haiku",
+        "memoryLimit": 5
+      }
+    },
+    "7f6d52ff84eeec8d21ce6d8ab554bc86": {
+      "timestamp": 1770013938113,
       "result": {
         "complexity": "moderate",
         "intent": {
           "primary": "debugging",
-          "confidence": 0.9,
-          "description": "Query appears to be about debugging"
+          "confidence": 0.85,
+          "description": "Seeking general strategies and approaches for effective software debugging"
         },
         "keywords": {
           "required": [
-            "debug",
-            "error",
-            "authentication"
+            "debugging",
+            "patterns",
+            "techniques"
           ],
-          "optional": [],
-          "excluded": []
+          "optional": [
+            "software",
+            "programming",
+            "troubleshooting",
+            "methodologies"
+          ],
+          "excluded": [
+            "hardware",
+            "unrelated",
+            "non-technical"
+          ]
         },
         "concepts": [
-          "debug",
-          "error",
-          "authentication"
+          "Software Engineering",
+          "Problem Solving",
+          "Error Resolution",
+          "Code Analysis",
+          "Systematic Debugging"
         ],
         "matchStrategy": {
-          "primary": "keyword",
-          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+          "primary": "semantic",
+          "reasoning": "Query is conceptual and requires understanding of broader debugging approaches, not just exact keyword matches"
         },
-        "source": "fallback",
+        "source": "haiku",
         "memoryLimit": 15
       }
     },
-    "13a5848857dfb7761f82307d83bb11bc": {
-      "timestamp": 1769998209486,
+    "c12ca63b213119c69d756b270730f5b1": {
+      "timestamp": 1770013960947,
       "result": {
-        "complexity": "simple",
+        "complexity": "complex",
         "intent": {
-          "primary": "configuration",
-          "confidence": 0.65,
-          "description": "Query appears to be about configuration"
+          "primary": "debugging",
+          "confidence": 0.9,
+          "description": "Comprehensive troubleshooting approach for Chrome extension development and error resolution"
         },
         "keywords": {
           "required": [
-            "filesystemwatcher",
-            "powershell",
-            "configuration"
+            "Chrome extension",
+            "Developer Tools",
+            "error logs",
+            "manifest",
+            "debugging",
+            "browser console"
           ],
-          "optional": [],
-          "excluded": []
+          "optional": [
+            "permissions",
+            "performance",
+            "compatibility",
+            "troubleshooting"
+          ],
+          "excluded": [
+            "unrelated web development",
+            "non-browser specific",
+            "generic development"
+          ]
         },
         "concepts": [
-          "filesystemwatcher",
-          "powershell",
-          "configuration"
+          "Browser Extension Development",
+          "Web Extension Debugging",
+          "Chrome Extension Architecture",
+          "Browser Performance Optimization",
+          "Extension Error Handling"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query covers multiple interconnected technical domains requiring nuanced, context-aware retrieval of debugging and development insights"
+        },
+        "source": "haiku",
+        "memoryLimit": 30
+      }
+    },
+    "8275bd6d42ff7acbafb2af043d48acf6": {
+      "timestamp": 1770014248877,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "debugging",
+          "confidence": 0.85,
+          "description": "Understanding techniques to prevent memory leaks when using React hooks"
+        },
+        "keywords": {
+          "required": [
+            "React",
+            "hooks",
+            "memory leak",
+            "cleanup",
+            "useEffect"
+          ],
+          "optional": [
+            "unsubscribe",
+            "subscription",
+            "component unmount",
+            "memoization"
+          ],
+          "excluded": [
+            "non-React",
+            "server-side",
+            "unrelated performance"
+          ]
+        },
+        "concepts": [
+          "React component lifecycle",
+          "Memory management",
+          "Event handling",
+          "Performance optimization"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query requires understanding of contextual React development patterns and memory management nuances beyond simple keyword matching"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "8b822e65ee0f5fedbb08a08f3ea10efd": {
+      "timestamp": 1770014263894,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.85,
+          "description": "User seeking strategies and techniques to improve database performance"
+        },
+        "keywords": {
+          "required": [
+            "database",
+            "performance",
+            "optimization"
+          ],
+          "optional": [
+            "indexing",
+            "query",
+            "tuning",
+            "scaling",
+            "efficiency"
+          ],
+          "excluded": [
+            "introduction",
+            "beginner",
+            "theory"
+          ]
+        },
+        "concepts": [
+          "database performance",
+          "query optimization",
+          "system efficiency",
+          "database architecture",
+          "scalability"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Topic requires understanding nuanced performance improvement strategies beyond simple keyword matching, needing contextual interpretation of database optimization techniques"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "004a0c4ad9343c3e7ef9fbd7f1d44b04": {
+      "timestamp": 1770014277464,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.85,
+          "description": "Understanding concurrent programming design approaches and strategies"
+        },
+        "keywords": {
+          "required": [
+            "concurrent",
+            "programming",
+            "patterns"
+          ],
+          "optional": [
+            "threading",
+            "parallelism",
+            "synchronization",
+            "race conditions"
+          ],
+          "excluded": [
+            "serial",
+            "sequential",
+            "single-threaded"
+          ]
+        },
+        "concepts": [
+          "Parallel Computing",
+          "Concurrency Models",
+          "Synchronization Techniques",
+          "Multi-threading",
+          "Distributed Systems"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query requires understanding conceptual relationships between concurrent programming concepts, not just exact keyword matches"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "d870b08ef2cb724d15cf25daa9aac92c": {
+      "timestamp": 1770014296823,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "debugging",
+          "confidence": 0.85,
+          "description": "Understanding async behavior and proper cleanup in React's useEffect hook"
+        },
+        "keywords": {
+          "required": [
+            "useEffect",
+            "async",
+            "cleanup"
+          ],
+          "optional": [
+            "React",
+            "hooks",
+            "memory leak",
+            "unmount"
+          ],
+          "excluded": [
+            "Vue",
+            "Angular",
+            "server-side"
+          ]
+        },
+        "concepts": [
+          "React Hooks",
+          "React Component Lifecycle",
+          "Asynchronous Operations",
+          "Memory Management"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query involves understanding a nuanced React pattern that requires contextual interpretation beyond simple keyword matching"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "e6423be9e9027017005065fbf6fc60a0": {
+      "timestamp": 1770014312181,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "debugging",
+          "confidence": 0.9,
+          "description": "Understanding PostgreSQL query performance and buffer usage details"
+        },
+        "keywords": {
+          "required": [
+            "PostgreSQL",
+            "EXPLAIN",
+            "BUFFERS"
+          ],
+          "optional": [
+            "query",
+            "optimization",
+            "performance"
+          ],
+          "excluded": [
+            "installation",
+            "configuration"
+          ]
+        },
+        "concepts": [
+          "database performance analysis",
+          "query execution plan",
+          "database buffer management"
         ],
         "matchStrategy": {
           "primary": "keyword",
-          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+          "reasoning": "Specific technical query with clear database performance diagnostic terms requires precise keyword matching"
         },
-        "source": "fallback",
+        "source": "haiku",
         "memoryLimit": 5
       }
     },
-    "640b41d6f001291798e77d86b6d95895": {
-      "timestamp": 1769998209509,
+    "d242a610de30d86170f6280948be3913": {
+      "timestamp": 1770014336998,
       "result": {
-        "complexity": "simple",
+        "complexity": "complex",
         "intent": {
-          "primary": "general",
-          "confidence": 0.5,
-          "description": "Query appears to be about general"
+          "primary": "exploration",
+          "confidence": 0.6,
+          "description": "Broad technology landscape search across multiple programming domains and technologies"
         },
         "keywords": {
           "required": [
-            "filesystemwatcher",
-            "powershell"
+            "JavaScript",
+            "React",
+            "TypeScript",
+            "Node.js",
+            "Python",
+            "Django",
+            "Flask",
+            "Ruby",
+            "Rails",
+            "PostgreSQL",
+            "MongoDB",
+            "Redis",
+            "Docker",
+            "Kubernetes",
+            "AWS",
+            "Azure",
+            "GCP"
           ],
-          "optional": [],
-          "excluded": []
+          "optional": [
+            "developer",
+            "solutions",
+            "codebase",
+            "technologies"
+          ],
+          "excluded": [
+            "unspecific",
+            "vague"
+          ]
         },
         "concepts": [
-          "filesystemwatcher",
-          "powershell"
+          "Full-stack Development",
+          "Cloud Computing",
+          "DevOps",
+          "Database Technologies",
+          "Web Frameworks",
+          "Programming Languages"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Wide range of technologies suggests need for conceptual matching beyond simple keyword search"
+        },
+        "source": "haiku",
+        "memoryLimit": 30
+      }
+    },
+    "58108eef8b9f82f7f4ee5ad60e211125": {
+      "timestamp": 1770014349665,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.8,
+          "description": "Understanding special characters and their usage/meaning"
+        },
+        "keywords": {
+          "required": [
+            "special characters",
+            "symbols"
+          ],
+          "optional": [
+            "encoding",
+            "escaping",
+            "syntax"
+          ],
+          "excluded": [
+            "specific programming language",
+            "implementation details"
+          ]
+        },
+        "concepts": [
+          "character sets",
+          "symbol representation",
+          "character encoding"
         ],
         "matchStrategy": {
           "primary": "keyword",
-          "reasoning": "Using keyword fallback (API unavailable or disabled)"
+          "reasoning": "Direct match of unique character set suggests keyword-based search is most effective for retrieving relevant information about special characters"
         },
-        "source": "fallback",
+        "source": "haiku",
+        "memoryLimit": 5
+      }
+    },
+    "00cedfa91a53df040f0869c7508e8c4d": {
+      "timestamp": 1770015514655,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "implementation",
+          "confidence": 0.85,
+          "description": "Exploring technical details of vector database design and embedding techniques"
+        },
+        "keywords": {
+          "required": [
+            "vector database",
+            "embeddings",
+            "implementation",
+            "machine learning"
+          ],
+          "optional": [
+            "similarity search",
+            "semantic indexing",
+            "neural networks",
+            "recommendation systems"
+          ],
+          "excluded": [
+            "relational",
+            "traditional database",
+            "SQL"
+          ]
+        },
+        "concepts": [
+          "Machine Learning",
+          "Natural Language Processing",
+          "Information Retrieval",
+          "Data Structures",
+          "Semantic Search"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query requires understanding of complex technical relationships beyond simple keyword matching, needs contextual interpretation of vector database and embedding technologies"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
+    },
+    "ccd338e1082f27548b8c189129d21d70": {
+      "timestamp": 1770015529936,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.9,
+          "description": "Understanding useEffect hook lifecycle and cleanup mechanism in React"
+        },
+        "keywords": {
+          "required": [
+            "useEffect",
+            "cleanup",
+            "React hooks"
+          ],
+          "optional": [
+            "memory leak",
+            "component unmount",
+            "side effect"
+          ],
+          "excluded": [
+            "class component",
+            "legacy"
+          ]
+        },
+        "concepts": [
+          "React functional components",
+          "Hooks lifecycle management",
+          "Side effect handling",
+          "Performance optimization"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query requires understanding context and specific hook behavior, not just literal keyword matching"
+        },
+        "source": "haiku",
         "memoryLimit": 5
       }
     }
   },
-  "lastCleanup": 1769998209465
+  "lastCleanup": 1770015514655
 }

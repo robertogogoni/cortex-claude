@@ -60,6 +60,18 @@ class JSONLAdapter extends BaseAdapter {
         priority: 0.7,
       },
       {
+        name: 'insights',
+        path: 'data/memories/insights.jsonl',
+        maxAge: null,  // No expiry - insights are permanent
+        priority: 0.85,  // Higher than long-term, these are curated learnings
+      },
+      {
+        name: 'learnings',
+        path: 'data/memories/learnings.jsonl',
+        maxAge: null,  // No expiry
+        priority: 0.8,
+      },
+      {
         name: 'skills',
         path: 'data/skills/index.jsonl',
         maxAge: null,

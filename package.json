@@ -14,7 +14,10 @@
     "uninstall-hooks": "node scripts/uninstall-hooks.cjs",
     "status": "node scripts/status.cjs",
     "cortex": "node cortex/server.cjs",
-    "cli": "node bin/cortex.cjs"
+    "cli": "node bin/cortex.cjs",
+    "backfill": "node scripts/backfill-vectors.cjs",
+    "backfill:dry": "node scripts/backfill-vectors.cjs --dry-run",
+    "backfill:force": "node scripts/backfill-vectors.cjs --force"
   },
   "keywords": [
     "claude",

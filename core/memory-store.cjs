@@ -54,6 +54,8 @@ const MEMORY_SOURCES = [
   'claudemd',
   'user',
   'system',
+  'cortex-learn',  // Learnings from cortex__learn tool
+  'direct',        // Direct programmatic inserts
 ];
 
 /** @const {string[]} Valid memory statuses */

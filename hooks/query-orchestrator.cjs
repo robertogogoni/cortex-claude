@@ -152,6 +152,14 @@ class QueryOrchestrator {
         finalMemories = selectedMemories.slice(0, context._memoryLimit);
       }
 
+      // Track usage for returned memories (fire-and-forget, non-blocking)
+      this._trackUsage(finalMemories).catch(err => {
+        // Silently ignore tracking errors - don't break queries
+        if (this.registry._verbose) {
+          console.error('[QueryOrchestrator] Usage tracking error:', err.message);
+        }
+      });
+
       return {
         context,
         memories: finalMemories,
@@ -177,6 +185,46 @@ class QueryOrchestrator {
       // Restore original adapter states if we modified them
       if (originalStates) {
         this._restoreAdapterStates(originalStates);
+      }
+    }
+  }
+
+  /**
+   * Track usage for queried memories
+   * Updates usageCount and lastUsed for writable adapters
+   * @private
+   * @param {Object[]} memories
+   */
+  async _trackUsage(memories) {
+    const now = new Date().toISOString();
+    const updatesByAdapter = new Map();
+
+    // Group memories by their source adapter
+    for (const memory of memories) {
+      const source = memory._source;
+      if (!source || !memory.id) continue;
+
+      if (!updatesByAdapter.has(source)) {
+        updatesByAdapter.set(source, []);
+      }
+      updatesByAdapter.get(source).push(memory);
+    }
+
+    // Update each adapter's memories
+    for (const [adapterName, adapterMemories] of updatesByAdapter) {
+      const adapter = this.registry.get(adapterName);
+      if (!adapter?.supportsWrite()) continue;
+
+      for (const memory of adapterMemories) {
+        try {
+          await adapter.update(memory.id, {
+            usageCount: (memory.usageCount || 0) + 1,
+            lastUsed: now,
+            updatedAt: now,
+          });
+        } catch {
+          // Silently ignore individual update failures
+        }
       }
     }
   }

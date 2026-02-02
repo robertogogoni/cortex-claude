@@ -481,6 +481,82 @@ async function runIntegrationTests() {
   });
 
   // ==========================================================================
+  // SONNET THINKER LEARN -> VECTOR INTEGRATION
+  // ==========================================================================
+
+  console.log('\n=== SonnetThinker Learn -> Vector Integration ===\n');
+
+  // Test 1: Always test infrastructure (no API key needed)
+  await asyncTest('SonnetThinker._ensureVectorProvider() initializes correctly', async () => {
+    const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
+
+    const infraTestDir = path.join(testDir, 'learn-infra-test');
+    fs.mkdirSync(infraTestDir, { recursive: true });
+
+    const sonnet = new SonnetThinker({
+      basePath: infraTestDir,
+    });
+
+    // Test that the vector provider can be initialized
+    const provider = await sonnet._ensureVectorProvider();
+    assert.ok(provider, 'Vector provider should be initialized');
+    assert.ok(provider.initialized, 'Vector provider should be in initialized state');
+
+    // Clean up
+    await provider.shutdown();
+  });
+
+  // Test 2: Test learn() with API (may fall back to defaults if API fails)
+  // This tests the dual-write logic regardless of API success
+  await asyncTest('SonnetThinker.learn() writes to vector store (with fallback)', async () => {
+    const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
+
+    const learnTestDir = path.join(testDir, 'learn-vector-test');
+    fs.mkdirSync(learnTestDir, { recursive: true });
+
+    const sonnet = new SonnetThinker({
+      basePath: learnTestDir,
+    });
+
+    // Call learn with a test insight
+    // If API fails, it will use fallback defaults (quality=5, which is >= 4)
+    const result = await sonnet.learn(
+      'SQLite FTS5 enables fast full-text search with BM25 ranking',
+      'Database optimization for Cortex memory search',
+      'pattern',
+      ['sqlite', 'fts5', 'search']
+    );
+
+    // Verify the insight was stored (should work even with API fallback)
+    assert.ok(result.stored, 'Insight should be stored (quality >= 4, even with fallback)');
+    assert.ok(result.vectorStored, 'Insight should be written to vector store');
+    assert.ok(result.vectorId, 'Should have a vector ID');
+
+    // Now search for it via vector search
+    const { VectorSearchProvider } = require('../core/vector-search-provider.cjs');
+    const searchProvider = new VectorSearchProvider({
+      basePath: learnTestDir,
+    });
+    await searchProvider.initialize();
+
+    const searchResult = await searchProvider.search('SQLite full-text search FTS5', {
+      limit: 5,
+      minScore: 0.01,
+    });
+
+    assert.ok(searchResult.results.length > 0, 'Should find the learned insight via vector search');
+
+    // Check that the found memory contains our content
+    const foundMemory = searchResult.results.find(r =>
+      r.memory.content.toLowerCase().includes('fts5') ||
+      r.memory.content.toLowerCase().includes('full-text')
+    );
+    assert.ok(foundMemory, 'Should find memory with FTS5 content');
+
+    await searchProvider.shutdown();
+  });
+
+  // ==========================================================================
   // CLEANUP
   // ==========================================================================
 
