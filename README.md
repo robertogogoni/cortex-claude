@@ -8,6 +8,7 @@
 [![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange)]()
 [![Security](https://img.shields.io/badge/security-AES--256--GCM-green)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
+[![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet)](ROADMAP.md)
 
 **A dual-model cognitive layer for Claude Code** that provides true cross-session memory through auto-extraction, auto-recall, MCP tools for deep reasoning, vector search, and compounding learnings.
 
@@ -800,6 +801,7 @@ const { VectorSearchProvider } = require('./core/vector-search-provider.cjs');
 | Document | Description |
 |----------|-------------|
 | [README.md](README.md) | This file - overview and quick start |
+| [ROADMAP.md](ROADMAP.md) | Project roadmap with all phases and plans |
 | [QUICKSTART.md](QUICKSTART.md) | 2-minute setup guide |
 | [docs/API.md](docs/API.md) | Complete API reference for all tools |
 | [docs/EXAMPLES.md](docs/EXAMPLES.md) | Practical usage examples |
@@ -808,10 +810,11 @@ const { VectorSearchProvider } = require('./core/vector-search-provider.cjs');
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Run tests: `npm test`
-4. Submit a pull request
+1. Check the [ROADMAP.md](ROADMAP.md) for available tasks
+2. Fork the repository
+3. Create a feature branch
+4. Run tests: `npm test`
+5. Submit a pull request
 
 ## License
 
