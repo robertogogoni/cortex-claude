@@ -547,6 +547,90 @@
         "source": "haiku",
         "memoryLimit": 5
       }
+    },
+    "97fd71432d89f486d12518f0b27aa28d": {
+      "timestamp": 1770015598868,
+      "result": {
+        "complexity": "simple",
+        "intent": {
+          "primary": "exploration",
+          "confidence": 0.8,
+          "description": "Seeking information about milestone completion for Cortex vector database project"
+        },
+        "keywords": {
+          "required": [
+            "Cortex",
+            "vector database",
+            "milestone"
+          ],
+          "optional": [
+            "complete",
+            "project",
+            "status"
+          ],
+          "excluded": [
+            "bug",
+            "error",
+            "problem"
+          ]
+        },
+        "concepts": [
+          "Vector Database Technology",
+          "Project Milestone Tracking",
+          "Database Development",
+          "Cortex Project"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "The query suggests a high-level informational need about project status, requiring contextual understanding beyond simple keyword matching"
+        },
+        "source": "haiku",
+        "memoryLimit": 5
+      }
+    },
+    "3fd011bb0a9056e84602db85d3612bc0": {
+      "timestamp": 1770015718357,
+      "result": {
+        "complexity": "moderate",
+        "intent": {
+          "primary": "implementation",
+          "confidence": 0.85,
+          "description": "Creating GitHub profile README with deployment and stats visualization"
+        },
+        "keywords": {
+          "required": [
+            "GitHub",
+            "profile",
+            "stats",
+            "widgets",
+            "Vercel"
+          ],
+          "optional": [
+            "deployment",
+            "README",
+            "visualization",
+            "dynamic"
+          ],
+          "excluded": [
+            "enterprise",
+            "private",
+            "corporate"
+          ]
+        },
+        "concepts": [
+          "GitHub Profile Customization",
+          "GitHub Stats Visualization",
+          "Web Deployment",
+          "Dynamic README",
+          "Personal Branding"
+        ],
+        "matchStrategy": {
+          "primary": "semantic",
+          "reasoning": "Query involves multiple interconnected technical concepts requiring contextual understanding beyond simple keyword matching"
+        },
+        "source": "haiku",
+        "memoryLimit": 15
+      }
     }
   },
   "lastCleanup": 1770015514655
