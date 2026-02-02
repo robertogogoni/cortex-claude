@@ -1,48 +1,49 @@
 {
   "entries": {
-    "364ab90f11d932cec769678d8385d49a": {
-      "timestamp": 1769931773251,
+    "5174c9965551e56c8a3cfb5954ab7aa3": {
+      "timestamp": 1769975832962,
       "result": {
-        "complexity": "moderate",
+        "complexity": "complex",
         "intent": {
-          "primary": "debugging",
-          "confidence": 0.75,
-          "description": "Investigating low-level memory or processor initialization mechanisms related to load/store operations"
+          "primary": "exploration",
+          "confidence": 0.8,
+          "description": "Investigating advanced memory management and persistence techniques for knowledge representation"
         },
         "keywords": {
           "required": [
-            "cortex",
-            "initialization",
-            "load",
-            "store"
+            "memory",
+            "MCP",
+            "implementations",
+            "persistence",
+            "knowledge graph"
           ],
           "optional": [
-            "memory",
-            "processor",
-            "embedded",
-            "architecture"
+            "distributed",
+            "storage",
+            "architecture",
+            "data model"
           ],
           "excluded": [
-            "software",
-            "application",
-            "high-level"
+            "temporary",
+            "volatile",
+            "short-term"
           ]
         },
         "concepts": [
-          "Computer Architecture",
-          "Embedded Systems",
-          "Memory Management",
-          "Processor Initialization",
-          "Low-Level Programming"
+          "Memory Control Process (MCP)",
+          "Knowledge Representation",
+          "Persistent Storage",
+          "Semantic Networking",
+          "Data Persistence Strategies"
         ],
         "matchStrategy": {
           "primary": "semantic",
-          "reasoning": "Query involves technical, domain-specific terminology suggesting nuanced technical exploration beyond simple keyword matching"
+          "reasoning": "Query involves complex, interconnected technical concepts requiring deep contextual understanding beyond simple keyword matching"
         },
         "source": "haiku",
-        "memoryLimit": 15
+        "memoryLimit": 30
       }
     }
   },
-  "lastCleanup": 1769931773251
+  "lastCleanup": 1769975832962
 }

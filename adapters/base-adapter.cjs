@@ -35,6 +35,7 @@
  * @property {number} usageSuccessRate - 0.0-1.0
  * @property {string|null} lastUsed - ISO timestamp or null
  * @property {number} decayScore - 0.0-1.0, decreases over time
+ * @property {Float32Array|null} embedding - 384-dimensional vector embedding
  * @property {'active' | 'archived' | 'deleted'} status
  * @property {string} createdAt - ISO 8601
  * @property {string} updatedAt - ISO 8601
@@ -400,6 +401,7 @@ class BaseAdapter {
       usageSuccessRate: data.usageSuccessRate || 0.5,
       lastUsed: data.lastUsed || null,
       decayScore: data.decayScore || 1.0,
+      embedding: data.embedding || null,
       status: data.status || 'active',
       createdAt: data.createdAt || now,
       updatedAt: data.updatedAt || now,

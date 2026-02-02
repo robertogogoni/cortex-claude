@@ -17,6 +17,7 @@ const { KnowledgeGraphAdapter } = require('./knowledge-graph-adapter.cjs');
 const { ClaudeMdAdapter } = require('./claudemd-adapter.cjs');
 const { GeminiAdapter } = require('./gemini-adapter.cjs');
 const { WarpSQLiteAdapter } = require('./warp-sqlite-adapter.cjs');
+const { VectorSearchAdapter } = require('./vector-adapter.cjs');
 const { EpisodicAnnotationsLayer } = require('./episodic-annotations-layer.cjs');
 const { expandPath } = require('../core/types.cjs');
 
@@ -309,6 +310,17 @@ function createDefaultRegistry(config = {}) {
     databasePaths: warpConfig.databasePaths,  // Auto-discovers if not provided
   }));
 
+  // 7. Vector Search Adapter (semantic + BM25 hybrid search)
+  const vectorConfig = config.adapters?.vector || {};
+  registry.register(new VectorSearchAdapter({
+    enabled: vectorConfig.enabled !== false,  // Enabled by default
+    basePath,
+    vectorWeight: vectorConfig.vectorWeight || 0.6,
+    bm25Weight: vectorConfig.bm25Weight || 0.4,
+    rrfK: vectorConfig.rrfK || 60,
+    minScore: vectorConfig.minScore || 0.1,
+  }));
+
   // Episodic Annotations Layer (attached to registry, not a regular adapter)
   // This provides write capability on top of read-only episodic memory
   const annotationsConfig = config.adapters?.episodicAnnotations || {};
@@ -343,6 +355,7 @@ module.exports = {
   ClaudeMdAdapter,
   GeminiAdapter,
   WarpSQLiteAdapter,
+  VectorSearchAdapter,
 
   // Overlay layers
   EpisodicAnnotationsLayer,

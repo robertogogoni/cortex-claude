@@ -22,6 +22,13 @@ const {
 } = require('./error-handler.cjs');
 const { ConfigValidator, ConfigManager, getConfigManager, DEFAULT_CONFIG } = require('./config.cjs');
 
+// Vector search components
+const { Embedder, LRUCache, EMBEDDING_DIM } = require('./embedder.cjs');
+const { VectorIndex } = require('./vector-index.cjs');
+const { MemoryStore } = require('./memory-store.cjs');
+const { HybridSearch } = require('./hybrid-search.cjs');
+const { VectorSearchProvider, getVectorSearchProvider } = require('./vector-search-provider.cjs');
+
 // LADS components
 const {
   LADSCore,
@@ -54,6 +61,7 @@ class CMOCore {
     this._lockManager = null;
     this._writeQueue = null;
     this._lads = null;
+    this._vectorSearch = null;
   }
 
   /**
@@ -138,6 +146,25 @@ class CMOCore {
   }
 
   /**
+   * Get Vector Search Provider (lazy)
+   * Provides hybrid search combining BM25 + semantic vector search
+   * @returns {VectorSearchProvider}
+   */
+  get vectorSearch() {
+    if (!this._vectorSearch) {
+      this._vectorSearch = getVectorSearchProvider({
+        basePath: this.basePath,
+        // Config-driven options
+        vectorWeight: this.config.get('vectorSearch.vectorWeight') || 0.6,
+        bm25Weight: this.config.get('vectorSearch.bm25Weight') || 0.4,
+        rrfK: this.config.get('vectorSearch.rrfK') || 60,
+        minScore: this.config.get('vectorSearch.minScore') || 0.1,
+      });
+    }
+    return this._vectorSearch;
+  }
+
+  /**
    * Initialize all components
    * @returns {Promise<{success: boolean, components: Object}>}
    */
@@ -146,6 +173,7 @@ class CMOCore {
       config: { success: false },
       storage: { success: false },
       lads: { success: false },
+      vectorSearch: { success: false },
       errorHandler: { success: true },
       lockManager: { success: true },
     };
@@ -159,6 +187,24 @@ class CMOCore {
 
       // Initialize LADS core
       results.lads = await this.lads.initialize();
+
+      // Initialize Vector Search (optional - may fail if dependencies missing)
+      try {
+        const vectorResult = await this.vectorSearch.initialize();
+        results.vectorSearch = {
+          success: true,
+          ...vectorResult,
+        };
+        console.log(`[Cortex] Vector search initialized: ${vectorResult.vectorCount} vectors`);
+      } catch (vectorError) {
+        // Vector search is optional - don't fail entire init
+        results.vectorSearch = {
+          success: false,
+          error: vectorError.message,
+          optional: true,
+        };
+        console.warn(`[Cortex] Vector search unavailable: ${vectorError.message}`);
+      }
 
       this.initialized = true;
 
@@ -194,6 +240,16 @@ class CMOCore {
       await this._writeQueue.flushAll();
     }
 
+    // Shutdown vector search (saves indices)
+    if (this._vectorSearch) {
+      try {
+        await this._vectorSearch.shutdown();
+        console.log('[Cortex] Vector search shutdown complete');
+      } catch (error) {
+        console.error(`[Cortex] Vector search shutdown error: ${error.message}`);
+      }
+    }
+
     // Release all locks
     if (this._lockManager) {
       this._lockManager.releaseAll();
@@ -220,6 +276,7 @@ class CMOCore {
       lockManager: this._lockManager?.getStats() || null,
       writeQueue: this._writeQueue?.getStats() || null,
       lads: this._lads?.getStats() || null,
+      vectorSearch: this._vectorSearch?.getStats() || null,
     };
   }
 
@@ -232,6 +289,7 @@ class CMOCore {
       config: { healthy: false, message: '' },
       storage: { healthy: false, message: '' },
       locks: { healthy: false, message: '' },
+      vectorSearch: { healthy: false, message: '', optional: true },
     };
 
     // Config check
@@ -266,7 +324,24 @@ class CMOCore {
       checks.locks.message = e.message;
     }
 
-    const healthy = Object.values(checks).every(c => c.healthy);
+    // Vector Search check (optional - degraded mode OK)
+    try {
+      if (this._vectorSearch?.initialized) {
+        const vectorStats = this._vectorSearch.getStats();
+        checks.vectorSearch.healthy = vectorStats.initialized;
+        checks.vectorSearch.message = checks.vectorSearch.healthy
+          ? `OK (${vectorStats.vectorCount} vectors)`
+          : 'Not initialized';
+      } else {
+        checks.vectorSearch.message = 'Not loaded (optional)';
+      }
+    } catch (e) {
+      checks.vectorSearch.message = e.message;
+    }
+
+    // Core components must be healthy, vectorSearch is optional
+    const coreChecks = ['config', 'storage', 'locks'];
+    const healthy = coreChecks.every(name => checks[name].healthy);
 
     // Report to degradation manager
     for (const [name, check] of Object.entries(checks)) {
@@ -333,6 +408,16 @@ module.exports = {
   DocsWriter,
   SIGNAL_TYPES,
   EVOLUTION_RULES,
+
+  // Vector Search (semantic + BM25 hybrid search)
+  Embedder,
+  LRUCache,
+  EMBEDDING_DIM,
+  VectorIndex,
+  MemoryStore,
+  HybridSearch,
+  VectorSearchProvider,
+  getVectorSearchProvider,
 
   // Types and utilities
   ...types,

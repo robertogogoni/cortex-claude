@@ -69,6 +69,16 @@ module.exports = {
   SIGNAL_TYPES: core.SIGNAL_TYPES,
   EVOLUTION_RULES: core.EVOLUTION_RULES,
 
+  // Vector Search (semantic + BM25 hybrid search)
+  Embedder: core.Embedder,
+  LRUCache: core.LRUCache,
+  EMBEDDING_DIM: core.EMBEDDING_DIM,
+  VectorIndex: core.VectorIndex,
+  MemoryStore: core.MemoryStore,
+  HybridSearch: core.HybridSearch,
+  VectorSearchProvider: core.VectorSearchProvider,
+  getVectorSearchProvider: core.getVectorSearchProvider,
+
   // Types and utilities
   generateId: core.generateId,
   getTimestamp: core.getTimestamp,
@@ -105,6 +115,7 @@ module.exports = {
   EpisodicMemoryAdapter: adapters.EpisodicMemoryAdapter,
   KnowledgeGraphAdapter: adapters.KnowledgeGraphAdapter,
   ClaudeMdAdapter: adapters.ClaudeMdAdapter,
+  VectorSearchAdapter: adapters.VectorSearchAdapter,
 
   // ============= NAMESPACES =============
   // For organized access
