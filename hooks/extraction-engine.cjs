@@ -16,6 +16,7 @@ const path = require('path');
 const { generateId, getTimestamp, expandPath } = require('../core/types.cjs');
 const { JSONLStore } = require('../core/storage.cjs');
 const { getLockManager } = require('../core/lock-manager.cjs');
+const { WriteGate } = require('../core/write-gate.cjs');
 
 // =============================================================================
 // EXTRACTION PATTERNS
@@ -121,6 +122,7 @@ class ExtractionEngine {
     this.minSessionLength = options.minSessionLength || 3;
 
     this.lockManager = getLockManager();
+    this.writeGate = new WriteGate();
 
     // Stores for different memory types
     this._stores = null;
@@ -217,6 +219,7 @@ class ExtractionEngine {
         candidatesFound: extracted.length,
         afterDedup: deduplicated.length,
         persisted: persistResults.persisted,
+        filteredByWriteGate: persistResults.filtered,
         byType: this._countByType(deduplicated),
       },
     };
@@ -490,9 +493,20 @@ class ExtractionEngine {
    */
   async _persistExtractions(extractions, stores) {
     let persisted = 0;
+    let filtered = 0;
 
     for (const extraction of extractions) {
       try {
+        // Write Gate: filter out noise before persisting
+        if (!this.writeGate.shouldPersist({
+          content: extraction.content,
+          type: extraction.type,
+          confidence: extraction.extractionConfidence,
+        })) {
+          filtered++;
+          continue;
+        }
+
         // Skills go to skills store
         if (extraction.type === 'skill') {
           await this.lockManager.withLock('memory:skills', async () => {
@@ -513,7 +527,7 @@ class ExtractionEngine {
       }
     }
 
-    return { persisted };
+    return { persisted, filtered };
   }
 
   /**
