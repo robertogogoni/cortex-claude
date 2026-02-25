@@ -764,6 +764,64 @@ program
   .option('-v, --verbose', 'Show detailed information')
   .action(searchCommand);
 
+program
+  .command('setup-key [key]')
+  .description('Set up your Anthropic API key for HyDE search and Haiku/Sonnet features')
+  .action(async (key) => {
+    const { getDiagnostics, setApiKey } = require('../core/api-key.cjs');
+    const diag = getDiagnostics();
+
+    printHeader('API Key Setup', icons.gear);
+
+    // Show current state
+    if (diag.available) {
+      console.log(`  ${c(icons.check, 'green')} API key already configured`);
+      console.log(`    Source: ${c(diag.source, 'cyan')}`);
+      console.log(`    Key:    ${c(diag.keyPrefix, 'dim')}`);
+      console.log();
+      if (!key) {
+        console.log(`  To replace it, run: ${c('cortex setup-key sk-ant-api03-YOUR_KEY', 'cyan')}`);
+        return;
+      }
+      console.log(`  ${c('Replacing existing key...', 'yellow')}`);
+    } else {
+      console.log(`  ${c(icons.cross, 'red')} No API key found`);
+      console.log();
+      console.log(`  Without an API key, these features are disabled:`);
+      console.log(`    ${c('•', 'dim')} HyDE query expansion (semantic search boost)`);
+      console.log(`    ${c('•', 'dim')} Haiku analysis (intelligent query routing)`);
+      console.log(`    ${c('•', 'dim')} Sonnet reasoning (deep reflection, learning)`);
+      console.log();
+    }
+
+    if (!key) {
+      console.log(`  ${c('Get your API key:', 'bold')}`);
+      console.log(`    1. Visit ${c('https://console.anthropic.com/settings/keys', 'cyan')}`);
+      console.log(`    2. Click ${c('Create Key', 'bold')}`);
+      console.log(`    3. Copy the key (starts with ${c('sk-ant-api03-...', 'dim')})`);
+      console.log(`    4. Run: ${c('cortex setup-key sk-ant-api03-YOUR_KEY_HERE', 'cyan')}`);
+      console.log();
+      console.log(`  Or set it manually:`);
+      console.log(`    ${c(`echo "ANTHROPIC_API_KEY=sk-ant-..." > ${diag.envFilePath}`, 'dim')}`);
+      return;
+    }
+
+    // Validate and save the key
+    const result = setApiKey(key);
+    if (result.success) {
+      console.log();
+      console.log(`  ${c(icons.check, 'green')} API key saved to ${c(diag.envFilePath, 'cyan')}`);
+      console.log(`    Key: ${c(key.slice(0, 12) + '...', 'dim')}`);
+      console.log(`    File permissions: ${c('0600 (owner-only)', 'dim')}`);
+      console.log();
+      console.log(`  ${c(icons.rocket, 'green')} HyDE search, Haiku analysis, and Sonnet reasoning are now enabled!`);
+    } else {
+      console.log();
+      console.log(`  ${c(icons.cross, 'red')} ${result.error}`);
+    }
+    console.log();
+  });
+
 // Parse arguments
 program.parse(process.argv);
 

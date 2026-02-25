@@ -118,4 +118,56 @@ function getDiagnostics() {
   };
 }
 
-module.exports = { getApiKey, hasApiKey, getKeySource, getDiagnostics, clearCache };
+/**
+ * Save an API key to ~/.claude/.env
+ * Validates format before saving.
+ *
+ * @param {string} key - The API key to save
+ * @returns {{ success: boolean, error?: string }}
+ */
+function setApiKey(key) {
+  if (!key || typeof key !== 'string') {
+    return { success: false, error: 'Key must be a non-empty string' };
+  }
+
+  key = key.trim();
+
+  if (!_isValidKey(key)) {
+    return {
+      success: false,
+      error: 'Invalid key format. Anthropic API keys start with "sk-ant-" and are 90+ characters. Get yours at https://console.anthropic.com/settings/keys',
+    };
+  }
+
+  try {
+    const dir = path.dirname(ENV_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Read existing .env to preserve other vars
+    let content = '';
+    if (fs.existsSync(ENV_FILE)) {
+      content = fs.readFileSync(ENV_FILE, 'utf8');
+      // Replace existing key line
+      if (content.match(/^ANTHROPIC_API_KEY=.+$/m)) {
+        content = content.replace(/^ANTHROPIC_API_KEY=.+$/m, `ANTHROPIC_API_KEY=${key}`);
+      } else {
+        content = content.trimEnd() + '\nANTHROPIC_API_KEY=' + key + '\n';
+      }
+    } else {
+      content = `ANTHROPIC_API_KEY=${key}\n`;
+    }
+
+    fs.writeFileSync(ENV_FILE, content, { mode: 0o600 });
+
+    // Clear cache so next getApiKey() reads the new key
+    clearCache();
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: `Failed to write ${ENV_FILE}: ${e.message}` };
+  }
+}
+
+module.exports = { getApiKey, hasApiKey, getKeySource, getDiagnostics, clearCache, setApiKey };

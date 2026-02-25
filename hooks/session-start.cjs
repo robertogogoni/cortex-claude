@@ -380,6 +380,17 @@ async function main() {
 
   if (!compactMode) {
     renderer.banner();
+
+    // Check for API key — warn once if missing
+    try {
+      const { hasApiKey } = require('../core/api-key.cjs');
+      if (!hasApiKey()) {
+        process.stderr.write('\x1b[33m  ⚠ No API key — HyDE search & Haiku analysis disabled\x1b[0m\n');
+        process.stderr.write('\x1b[2m    Run: cortex setup-key  |  https://console.anthropic.com/settings/keys\x1b[0m\n');
+        process.stderr.write('\n');
+      }
+    } catch { /* api-key module not available — skip warning */ }
+
     renderer.begin();
     renderer.phaseStart('Initializing');
   }
