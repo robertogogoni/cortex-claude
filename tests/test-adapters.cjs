@@ -369,10 +369,10 @@ async function runEpisodicMemoryAdapterTests() {
     );
   })) passed++;
 
-  // Test: Query returns results from real SQLite database
-  total++;
+  // Test: Query returns results from real SQLite database (optional — skipped when DB not present)
   const realDbPath = path.join(os.homedir(), '.config', 'superpowers', 'conversation-index', 'db.sqlite');
   if (fs.existsSync(realDbPath)) {
+    total++;
     if (await testAsync('Query returns results from SQLite', async () => {
       const adapter = new EpisodicMemoryAdapter({ dbPath: realDbPath });
       const results = await adapter.query({ tags: ['claude'], domains: ['javascript'] });

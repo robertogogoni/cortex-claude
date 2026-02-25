@@ -217,9 +217,11 @@ Just ask naturally - Claude will use Cortex tools when relevant:
 **Cortex cannot:**
 - Remember conversations from before installation
 - Access memories from other users or machines (yet - sync planned)
-- Work offline (requires Anthropic API for Haiku/Sonnet)
+- Use HyDE search, Haiku analysis, or Sonnet reasoning without an [Anthropic API key](#set-up-api-key)
 - Guarantee perfect recall (relevance threshold filters results)
 - Read your mind (be specific about what you want to remember)
+
+> **Without an API key**, Cortex still works in local-only mode: keyword search, cache hits, and BM25 text matching are fully functional. You only need the key for LLM-powered features (HyDE expansion, intelligent ranking, deep reflection).
 
 **For best results:**
 - Use `/cortex learn` for important insights you want to preserve
@@ -371,12 +373,14 @@ Prompts standardize common cognitive workflows:
 
 ## MCP Sampling (Zero-Cost LLM)
 
-**New in v3.0**: Cortex routes all LLM calls through the host Claude session via **MCP Sampling** — no API key required, zero additional cost.
+**New in v3.0**: When running inside Claude Code, Cortex can route LLM calls through the host session via **MCP Sampling** — zero additional cost.
 
-- **Zero API key requirements** — LLM calls piggyback on the host Claude session
+- **Zero additional cost** — LLM calls piggyback on the host Claude Code session
 - **`modelPreferences` hints** — requests Haiku-class speed or Sonnet-class intelligence per operation
-- **Automatic fallback** — falls back to direct Anthropic API if `ANTHROPIC_API_KEY` is set
+- **Automatic fallback** — if MCP Sampling is unavailable, falls back to direct Anthropic API (requires [API key](#set-up-api-key))
 - **Dual-model behavior** — `speedPriority: 1.0` for queries, `intelligencePriority: 1.0` for reasoning
+
+> **Note**: MCP Sampling only works when Cortex runs as an MCP server inside Claude Code. For standalone usage (CLI, hooks), an [Anthropic API key](#set-up-api-key) is required for LLM features.
 
 ## Quick Start
 
@@ -387,6 +391,27 @@ Prompts standardize common cognitive workflows:
 git clone https://github.com/robertogogoni/cortex-claude.git ~/.claude/memory
 cd ~/.claude/memory && npm install
 ```
+
+### Set Up API Key
+
+Cortex's intelligent features (HyDE search, Haiku queries, Sonnet reasoning) require an **Anthropic API key**.
+
+1. Create an account at [console.anthropic.com](https://console.anthropic.com/)
+2. Go to **Settings > API Keys**: [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+3. Click **Create Key** and copy the key (starts with `sk-ant-api03-...`)
+4. Store it:
+
+```bash
+# Cortex reads from ~/.claude/.env (recommended)
+echo "ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE" > ~/.claude/.env
+```
+
+Cortex resolves the key from (in order):
+1. `~/.claude/.env` file
+2. `ANTHROPIC_API_KEY` environment variable
+3. Falls back to **local-only mode** (cache + keyword search still work, but no HyDE expansion, no Haiku analysis, no Sonnet reasoning)
+
+> **Cost estimate**: Haiku is ~$0.25/1M tokens (~$0.025/session). See [Cost Transparency](#cost-transparency) for details.
 
 ### Register MCP Server
 
