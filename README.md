@@ -2,7 +2,7 @@
 
 # Cortex - Claude's Cognitive Layer
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)
@@ -11,9 +11,11 @@
 [![Security](https://img.shields.io/badge/security-AES--256--GCM-green.svg)]()
 [![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet.svg)](ROADMAP.md)
 
-**Persistent cross-session memory for Claude Code with dual-model AI reasoning**
+**Zero-cost, self-healing memory OS for Claude Code with MCP Sampling, HyDE search, write gates, and bi-temporal knowledge**
 
 [Quick Start](#quick-start) | [How It Works](#architecture) | [Commands](#the-cortex-skill) | [Roadmap](ROADMAP.md)
+
+![Cortex Demo](assets/demo.gif)
 
 </div>
 
@@ -66,7 +68,7 @@ graph TB
 
 ## Vector Search Engine
 
-**New in v2.0**: Full semantic search with local embeddings - no external API calls for search.
+Full semantic search with local embeddings - no external API calls for search. **New in v3.0**: HyDE (Hypothetical Document Embeddings) query expansion for improved recall.
 
 ### Capabilities
 
@@ -350,21 +352,25 @@ Prompts standardize common cognitive workflows:
 | MCP Tools | :white_check_mark: 7 | :x: | :white_check_mark: 13 | :white_check_mark: 21 | :x: |
 | MCP Resources | :white_check_mark: | :x: | :x: | :x: | :x: |
 | MCP Prompts | :white_check_mark: | :x: | :x: | :x: | :x: |
-| Session Hooks | :white_check_mark: 3 | :x: | :x: | :x: | :white_check_mark: 2 |
-| Vector Search | :white_check_mark: Hybrid | :x: | :white_check_mark: | :white_check_mark: HNSW | :x: |
+| Session Hooks | :white_check_mark: 4 | :x: | :x: | :x: | :white_check_mark: 2 |
+| Vector Search | :white_check_mark: Hybrid + HyDE | :x: | :white_check_mark: | :white_check_mark: HNSW | :x: |
 | Auto-extraction | :white_check_mark: | :x: | :x: | :x: | :x: |
 | Tier Promotion | :white_check_mark: 3-tier | :x: | :x: | :x: | :white_check_mark: 4-tier |
 | LADS Framework | :white_check_mark: | :x: | :x: | :x: | :x: |
-| Write Gates | Planned | :x: | :x: | :white_check_mark: | :white_check_mark: |
-| Confidence Decay | Planned | :x: | :x: | :white_check_mark: FSRS-6 | :x: |
+| Write Gates | :white_check_mark: | :x: | :x: | :white_check_mark: | :white_check_mark: |
+| Confidence Decay | :white_check_mark: | :x: | :x: | :white_check_mark: FSRS-6 | :x: |
+| MCP Sampling | :white_check_mark: Zero-cost | :x: | :x: | :x: | :x: |
+| Bi-temporal Memory | :white_check_mark: | :x: | :x: | :x: | :x: |
+| HyDE Query Expansion | :white_check_mark: | :x: | :x: | :x: | :x: |
 
-## MCP Sampling Note
+## MCP Sampling (Zero-Cost LLM)
 
-Cortex currently uses **direct Anthropic API calls** for LLM operations (requires `ANTHROPIC_API_KEY`). Migration to **MCP Sampling** is planned for v3.0, which will:
+**New in v3.0**: Cortex routes all LLM calls through the host Claude session via **MCP Sampling** — no API key required, zero additional cost.
 
-- **Eliminate API key requirements** — route LLM calls through the host Claude session at zero cost
-- **Use `modelPreferences` hints** — request Haiku-class speed or Sonnet-class intelligence per operation
-- **Maintain dual-model behavior** — `speedPriority: 1.0` for queries, `intelligencePriority: 1.0` for reasoning
+- **Zero API key requirements** — LLM calls piggyback on the host Claude session
+- **`modelPreferences` hints** — requests Haiku-class speed or Sonnet-class intelligence per operation
+- **Automatic fallback** — falls back to direct Anthropic API if `ANTHROPIC_API_KEY` is set
+- **Dual-model behavior** — `speedPriority: 1.0` for queries, `intelligencePriority: 1.0` for reasoning
 
 ## Quick Start
 
@@ -515,7 +521,7 @@ Cortex is configurable via `~/.claude/memory/data/configs/current.json`:
 
 ```json
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
   "sessionStart": {
     "slots": {
       "maxTotal": 5,
