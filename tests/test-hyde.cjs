@@ -144,7 +144,7 @@ async function testHyDE() {
   {
     const worker = new HaikuWorker({
       basePath: '/tmp/cortex-test-hyde',
-      enableApiCalls: true,
+      enableApiCalls: false,  // Disable API so expired cache doesn't trigger real call
     });
 
     // Create a cache with very short TTL
@@ -157,8 +157,7 @@ async function testHyDE() {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const result = await worker._hydeExpand('test query');
-    // Result should be null because cache expired AND we have no real API
-    // (the worker will try _callHaiku which will fail without a real client)
+    // Result should be null because cache expired AND API calls are disabled
     assert.strictEqual(result, null, 'Expired cache should not return stale HyDE doc');
 
     // Restore TTL

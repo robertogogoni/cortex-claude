@@ -22,6 +22,7 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const { QueryOrchestrator } = require('../hooks/query-orchestrator.cjs');
 const { JSONLStore } = require('../core/storage.cjs');
 const { getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
+const { getApiKey } = require('../core/api-key.cjs');
 const path = require('path');
 const fs = require('fs');
 
@@ -29,7 +30,7 @@ const fs = require('fs');
 // CONSTANTS
 // =============================================================================
 
-const SONNET_MODEL = 'claude-sonnet-4-20250514';
+const SONNET_MODEL = 'claude-sonnet-4-6-20250627';
 const MAX_TOKENS = 2048;
 
 // Depth settings for reflection
@@ -81,9 +82,12 @@ class SonnetThinker {
 
     // Initialize Anthropic client only if no sampling adapter provided
     if (!this.samplingAdapter) {
-      this.client = new Anthropic({
-        apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
-      });
+      const apiKey = options.apiKey || getApiKey();
+      if (apiKey) {
+        this.client = new Anthropic({ apiKey });
+      } else {
+        this.client = null;
+      }
     } else {
       this.client = null;
     }

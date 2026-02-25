@@ -309,7 +309,9 @@ function fromAPIError(apiError) {
     return new CortexError('CORTEX_E005', { cause: apiError, details: message });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  let hasKey;
+  try { hasKey = require('./api-key.cjs').hasApiKey(); } catch { hasKey = !!process.env.ANTHROPIC_API_KEY; }
+  if (!hasKey) {
     return new CortexError('CORTEX_E001', { cause: apiError });
   }
 

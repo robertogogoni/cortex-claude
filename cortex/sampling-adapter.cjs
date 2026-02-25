@@ -1,5 +1,7 @@
 'use strict';
 
+const { getApiKey } = require('../core/api-key.cjs');
+
 /**
  * SamplingAdapter - Unified LLM completion interface
  *
@@ -9,7 +11,7 @@
 class SamplingAdapter {
   constructor(options = {}) {
     this.mcpContext = options.mcpContext || null;
-    this.apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY || null;
+    this.apiKey = options.apiKey || getApiKey();
     this.mode = this.mcpContext ? 'sampling' : (this.apiKey ? 'api' : 'none');
   }
 
@@ -41,7 +43,7 @@ class SamplingAdapter {
   async _viaAPI(prompt, { speed, maxTokens, systemPrompt }) {
     const Anthropic = require('@anthropic-ai/sdk').default;
     const client = new Anthropic({ apiKey: this.apiKey });
-    const model = speed === 'deep' ? 'claude-sonnet-4-20250514' : 'claude-3-5-haiku-20241022';
+    const model = speed === 'deep' ? 'claude-sonnet-4-6-20250627' : 'claude-haiku-4-5-20251001';
     const params = {
       model,
       max_tokens: maxTokens,

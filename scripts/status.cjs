@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Cortex Status Script (v1.1.0)
- * Shows the current status of Cortex - Claude's Cognitive Layer
- * Including adapter status and memory statistics
+ * Cortex Status Script (v3.0.0)
+ * Shows the current status of Cortex — Claude's Cognitive Layer
+ *
+ * Checks: API key, hooks, adapters, memory stats, data health
  */
 
 'use strict';
@@ -15,7 +16,7 @@ const CORTEX_DIR = process.env.CORTEX_DIR || path.join(os.homedir(), '.claude', 
 const SETTINGS_FILE = path.join(os.homedir(), '.claude', 'settings.json');
 
 // =============================================================================
-// HELPER FUNCTIONS
+// HELPERS
 // =============================================================================
 
 function formatBytes(bytes) {
@@ -30,75 +31,99 @@ function formatNumber(num) {
   return num.toLocaleString();
 }
 
+function ok(msg) { return `  \x1b[32m✓\x1b[0m ${msg}`; }
+function warn(msg) { return `  \x1b[33m!\x1b[0m ${msg}`; }
+function fail(msg) { return `  \x1b[31m✗\x1b[0m ${msg}`; }
+function dim(msg) { return `\x1b[2m${msg}\x1b[0m`; }
+function bold(msg) { return `\x1b[1m${msg}\x1b[0m`; }
+
 // =============================================================================
 // STATUS CHECKS
 // =============================================================================
 
 async function showStatus() {
-  console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║     Cortex - Claude\'s Cognitive Layer - Status (v2.0.0)          ║');
-  console.log('╚════════════════════════════════════════════════════════════╝');
-  console.log();
+  const pkg = JSON.parse(fs.readFileSync(path.join(CORTEX_DIR, 'package.json'), 'utf8'));
+  const version = pkg.version || '?.?.?';
 
-  // Check installation
-  console.log('📁 Installation:');
-  console.log(`   Location: ${CORTEX_DIR}`);
-  console.log(`   Exists: ${fs.existsSync(CORTEX_DIR) ? '✅ Yes' : '❌ No'}`);
-  console.log();
+  console.log('');
+  console.log(`  ╭──────────────────────────────────────────────╮`);
+  console.log(`  │  CORTEX v${version} — Claude's Cognitive Layer   │`);
+  console.log(`  ╰──────────────────────────────────────────────╯`);
+  console.log('');
 
-  // Check hooks
-  console.log('🪝 Hooks:');
+  let issues = 0;
+
+  // ─── API KEY ────────────────────────────────────────────────────────
+  console.log(bold('  API Key'));
+  try {
+    const { getDiagnostics } = require('../core/api-key.cjs');
+    const diag = getDiagnostics();
+    if (diag.available) {
+      console.log(ok(`Loaded from ${diag.source}`));
+      console.log(`    Key: ${diag.keyPrefix}`);
+    } else {
+      console.log(fail('No API key found'));
+      console.log(`    Add to ${diag.envFilePath}:`);
+      console.log(`    ANTHROPIC_API_KEY=sk-ant-...`);
+      issues++;
+    }
+  } catch (e) {
+    console.log(fail(`API key module error: ${e.message}`));
+    issues++;
+  }
+  console.log('');
+
+  // ─── HOOKS ──────────────────────────────────────────────────────────
+  console.log(bold('  Hooks'));
+  const hookTypes = ['SessionStart', 'SessionEnd', 'Stop', 'PreCompact'];
+  const hookFiles = {
+    SessionStart: 'session-start',
+    SessionEnd: 'session-end',
+    Stop: 'stop-hook',
+    PreCompact: 'pre-compact',
+  };
   try {
     const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-    const sessionStart = settings.hooks?.SessionStart?.some(h =>
-      h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-start'))
-    );
-    const sessionEnd = settings.hooks?.SessionEnd?.some(h =>
-      h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-end'))
-    );
-
-    console.log(`   SessionStart: ${sessionStart ? '✅ Registered' : '❌ Not registered'}`);
-    console.log(`   SessionEnd: ${sessionEnd ? '✅ Registered' : '❌ Not registered'}`);
+    for (const type of hookTypes) {
+      const registered = settings.hooks?.[type]?.some(h =>
+        h.hooks?.some(hh => hh.command?.includes(`memory/hooks/${hookFiles[type]}`))
+      );
+      if (registered) {
+        console.log(ok(`${type}`));
+      } else {
+        console.log(fail(`${type} — not registered`));
+        issues++;
+      }
+    }
   } catch (e) {
-    console.log('   ❌ Could not read settings.json');
+    console.log(fail(`Could not read settings.json: ${e.message}`));
+    issues += hookTypes.length;
   }
-  console.log();
+  console.log('');
 
-  // Check adapters
-  console.log('🔌 Memory Adapters:');
+  // ─── ADAPTERS ───────────────────────────────────────────────────────
+  console.log(bold('  Memory Adapters'));
   try {
     const { createDefaultRegistry } = require('../adapters/index.cjs');
-    const registry = createDefaultRegistry({ basePath: CORTEX_DIR });
+    const registry = createDefaultRegistry({ basePath: CORTEX_DIR, verbose: false });
     const adapters = registry.getAll();
 
     for (const adapter of adapters) {
-      const status = adapter.enabled ? '✅' : '⏸️';
-      const priority = (adapter.priority * 100).toFixed(0) + '%';
-      console.log(`   ${status} ${adapter.name} (priority: ${priority}, timeout: ${adapter.timeout}ms)`);
+      const pct = Math.round(adapter.priority * 100);
+      if (adapter.enabled) {
+        console.log(ok(`${adapter.name} ${dim(`(${pct}%, ${adapter.timeout}ms)`)}`));
+      } else {
+        console.log(warn(`${adapter.name} ${dim('(disabled)')}`));
+      }
     }
   } catch (e) {
-    console.log(`   ❌ Could not load adapters: ${e.message}`);
+    console.log(fail(`Could not load adapters: ${e.message}`));
+    issues++;
   }
-  console.log();
+  console.log('');
 
-  // Check data directories
-  console.log('💾 Data Directories:');
-  const dataDirs = [
-    'data/memories',
-    'data/skills',
-    'data/projects',
-    'data/cache',
-    'logs',
-  ];
-  for (const dir of dataDirs) {
-    const fullPath = path.join(CORTEX_DIR, dir);
-    const exists = fs.existsSync(fullPath);
-    console.log(`   ${dir}: ${exists ? '✅' : '❌'}`);
-  }
-  console.log();
-
-  // Check memory files with detailed stats
-  console.log('📊 Memory Statistics:');
+  // ─── MEMORY STATS ──────────────────────────────────────────────────
+  console.log(bold('  Memory Statistics'));
   try {
     const memoriesDir = path.join(CORTEX_DIR, 'data', 'memories');
     let totalMemories = 0;
@@ -113,9 +138,7 @@ async function showStatus() {
         const lines = content.trim().split('\n').filter(l => l).length;
         totalMemories += lines;
         totalSize += stat.size;
-
-        const icon = lines > 0 ? '📄' : '📭';
-        console.log(`   ${icon} ${file}: ${formatNumber(lines)} memories (${formatBytes(stat.size)})`);
+        console.log(`    ${file.padEnd(22)} ${String(lines).padStart(6)} records  ${formatBytes(stat.size).padStart(10)}`);
       }
 
       // Skills
@@ -126,123 +149,106 @@ async function showStatus() {
         const skillStat = fs.statSync(skillsPath);
         totalMemories += skillLines;
         totalSize += skillStat.size;
-        console.log(`   📄 skills/index.jsonl: ${formatNumber(skillLines)} skills (${formatBytes(skillStat.size)})`);
+        console.log(`    ${'skills/index.jsonl'.padEnd(22)} ${String(skillLines).padStart(6)} records  ${formatBytes(skillStat.size).padStart(10)}`);
       }
 
-      console.log(`   ─────────────────────────────────`);
-      console.log(`   📈 Total: ${formatNumber(totalMemories)} records (${formatBytes(totalSize)})`);
-
-      if (totalMemories === 0) {
-        console.log('   💡 Tip: Run bootstrap --seed to populate from CLAUDE.md');
-      }
+      console.log(`    ${'─'.repeat(44)}`);
+      console.log(`    ${'TOTAL'.padEnd(22)} ${String(totalMemories).padStart(6)} records  ${formatBytes(totalSize).padStart(10)}`);
     } else {
-      console.log('   ❌ Memories directory not created yet');
-      console.log('   💡 Tip: Run bootstrap.cjs to initialize');
+      console.log(warn('Memories directory not created. Run: node scripts/bootstrap.cjs'));
+      issues++;
     }
   } catch (e) {
-    console.log(`   ❌ Error reading memories: ${e.message}`);
+    console.log(fail(`Error reading memories: ${e.message}`));
   }
-  console.log();
+  console.log('');
 
-  // Check CLAUDE.md files (via adapter)
-  console.log('📖 CLAUDE.md Sources:');
-  try {
-    // Default paths - users can add custom paths via adapter config
-    const claudeMdPaths = [
-      path.join(os.homedir(), '.claude', 'CLAUDE.md'),
-      '.claude/CLAUDE.md',
-      './CLAUDE.md',
-    ];
+  // ─── EXTERNAL DATA SOURCES ──────────────────────────────────────────
+  console.log(bold('  External Data Sources'));
 
-    let found = 0;
-    for (const p of claudeMdPaths) {
-      const resolved = p.startsWith('~/')
-        ? path.join(os.homedir(), p.slice(2))
-        : p.startsWith('./')
-          ? path.resolve(process.cwd(), p)
-          : p;
-
-      if (fs.existsSync(resolved)) {
-        const stat = fs.statSync(resolved);
-        console.log(`   ✅ ${p} (${formatBytes(stat.size)})`);
-        found++;
-      } else {
-        console.log(`   ⏸️ ${p} (not found)`);
-      }
-    }
-
-    if (found === 0) {
-      console.log('   ⚠️ No CLAUDE.md files found');
-    }
-  } catch (e) {
-    console.log(`   ❌ Error checking CLAUDE.md: ${e.message}`);
-  }
-  console.log();
-
-  // Check MCP servers
-  console.log('🌐 MCP Server Configuration:');
-  try {
-    const claudeJsonPath = path.join(os.homedir(), '.claude.json');
-    if (fs.existsSync(claudeJsonPath)) {
-      const claudeJson = JSON.parse(fs.readFileSync(claudeJsonPath, 'utf8'));
-      const mcpServers = claudeJson.mcpServers || {};
-
-      // Check for memory-related MCP servers
-      const memoryMcp = mcpServers['memory'];
-      const episodicMcp = Object.keys(mcpServers).find(k =>
-        k.includes('episodic') || mcpServers[k].command?.includes('episodic')
-      );
-
-      console.log(`   Memory MCP: ${memoryMcp ? '✅ Configured' : '❌ Not configured'}`);
-      console.log(`   Episodic Memory: ${episodicMcp ? '✅ Configured' : '❌ Not configured'}`);
-
-      if (!memoryMcp) {
-        console.log('   💡 Tip: Add @modelcontextprotocol/server-memory to ~/.claude.json');
-      }
-    } else {
-      console.log('   ❌ ~/.claude.json not found');
-    }
-  } catch (e) {
-    console.log(`   ❌ Error checking MCP config: ${e.message}`);
-  }
-  console.log();
-
-  // Check config
-  console.log('⚙️  Configuration:');
-  try {
-    const configPath = path.join(CORTEX_DIR, 'data', 'configs', 'current.json');
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      console.log(`   Version: ${config.version || 'unknown'}`);
-      console.log(`   Max slots: ${config.sessionStart?.slots?.maxTotal || 'N/A'}`);
-      console.log(`   Quality threshold: ${config.sessionEnd?.qualityThreshold || 'N/A'}`);
-      console.log(`   LADS evolution: ${config.ladsCore?.evolutionEnabled ? '✅ enabled' : '⏸️ disabled'}`);
-    } else {
-      console.log('   ⚠️ No custom configuration (using defaults)');
-    }
-  } catch (e) {
-    console.log(`   ❌ Error: ${e.message}`);
-  }
-  console.log();
-
-  // Overall status
-  const coreInstalled = fs.existsSync(CORTEX_DIR);
-  const adaptersOk = fs.existsSync(path.join(CORTEX_DIR, 'adapters', 'index.cjs'));
-  const hasMemories = fs.existsSync(path.join(CORTEX_DIR, 'data', 'memories'));
-
-  console.log('═'.repeat(62));
-  if (coreInstalled && adaptersOk && hasMemories) {
-    console.log('✅ Cortex v2.0.0 is installed and ready!');
-    console.log('   Multi-source memory integration active.');
-  } else if (coreInstalled) {
-    console.log('⚠️ Cortex is partially installed.');
-    if (!adaptersOk) console.log('   - Run bootstrap to complete adapter setup');
-    if (!hasMemories) console.log('   - Run bootstrap --seed to initialize memories');
+  // Episodic memory DB
+  const epDbPath = path.join(os.homedir(), '.config', 'superpowers', 'conversation-index', 'db.sqlite');
+  if (fs.existsSync(epDbPath)) {
+    const stat = fs.statSync(epDbPath);
+    console.log(ok(`Episodic DB: ${formatBytes(stat.size)} ${dim(epDbPath)}`));
   } else {
-    console.log('❌ Cortex needs to be installed.');
-    console.log('   Run: node scripts/bootstrap.cjs --seed');
+    console.log(warn(`Episodic DB not found ${dim(epDbPath)}`));
   }
+
+  // Knowledge graph
+  try {
+    const kgGlob = path.join(os.homedir(), '.npm', '_npx');
+    if (fs.existsSync(kgGlob)) {
+      const dirs = fs.readdirSync(kgGlob);
+      let found = false;
+      for (const dir of dirs) {
+        const candidate = path.join(kgGlob, dir, 'node_modules', '@modelcontextprotocol', 'server-memory', 'dist', 'memory.jsonl');
+        if (fs.existsSync(candidate)) {
+          const stat = fs.statSync(candidate);
+          console.log(ok(`Knowledge Graph: ${formatBytes(stat.size)} ${dim(candidate)}`));
+          found = true;
+          break;
+        }
+      }
+      if (!found) console.log(warn('Knowledge Graph JSONL not found in npx cache'));
+    }
+  } catch { console.log(warn('Could not scan npx cache for knowledge graph')); }
+
+  // Warp SQLite
+  const warpPath = path.join(os.homedir(), '.local', 'state', 'warp-terminal', 'warp.sqlite');
+  if (fs.existsSync(warpPath)) {
+    const stat = fs.statSync(warpPath);
+    console.log(ok(`Warp Terminal: ${formatBytes(stat.size)} ${dim(warpPath)}`));
+  } else {
+    console.log(dim('    Warp Terminal: not installed'));
+  }
+
+  // CLAUDE.md
+  const claudeMd = path.join(os.homedir(), '.claude', 'CLAUDE.md');
+  if (fs.existsSync(claudeMd)) {
+    const stat = fs.statSync(claudeMd);
+    console.log(ok(`CLAUDE.md: ${formatBytes(stat.size)} ${dim(claudeMd)}`));
+  } else {
+    console.log(warn('~/.claude/CLAUDE.md not found'));
+  }
+
+  // Gemini brain
+  const geminiDir = path.join(os.homedir(), '.gemini', 'antigravity', 'brain');
+  if (fs.existsSync(geminiDir)) {
+    const sessions = fs.readdirSync(geminiDir).filter(f =>
+      fs.statSync(path.join(geminiDir, f)).isDirectory()
+    ).length;
+    console.log(ok(`Gemini Brain: ${sessions} sessions ${dim(geminiDir)}`));
+  } else {
+    console.log(dim('    Gemini Brain: not installed'));
+  }
+  console.log('');
+
+  // ─── MODELS ─────────────────────────────────────────────────────────
+  console.log(bold('  Models'));
+  try {
+    // Read model constants from source
+    const haikuSrc = fs.readFileSync(path.join(CORTEX_DIR, 'cortex', 'haiku-worker.cjs'), 'utf8');
+    const sonnetSrc = fs.readFileSync(path.join(CORTEX_DIR, 'cortex', 'sonnet-thinker.cjs'), 'utf8');
+    const haikuMatch = haikuSrc.match(/HAIKU_MODEL\s*=\s*'([^']+)'/);
+    const sonnetMatch = sonnetSrc.match(/SONNET_MODEL\s*=\s*'([^']+)'/);
+    console.log(`    Worker (Haiku):  ${haikuMatch ? haikuMatch[1] : 'unknown'}`);
+    console.log(`    Thinker (Sonnet): ${sonnetMatch ? sonnetMatch[1] : 'unknown'}`);
+    console.log(`    Embeddings:       all-MiniLM-L6-v2 (384 dims, local)`);
+  } catch {
+    console.log(warn('Could not read model configuration'));
+  }
+  console.log('');
+
+  // ─── VERDICT ────────────────────────────────────────────────────────
+  console.log('  ─'.repeat(24));
+  if (issues === 0) {
+    console.log(`  ${bold('\x1b[32mCortex v' + version + ' is fully operational.\x1b[0m')}`);
+  } else {
+    console.log(`  ${bold('\x1b[33mCortex has ' + issues + ' issue' + (issues > 1 ? 's' : '') + ' to fix.\x1b[0m')}`);
+    console.log(`  Run: ${dim('npm run install-hooks')} to register missing hooks`);
+  }
+  console.log('');
 }
 
-// Run
 showStatus().catch(console.error);

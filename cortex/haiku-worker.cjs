@@ -21,6 +21,7 @@
 const Anthropic = require('@anthropic-ai/sdk').default;
 const { QueryOrchestrator } = require('../hooks/query-orchestrator.cjs');
 const { ContextAnalyzer } = require('../hooks/context-analyzer.cjs');
+const { getApiKey } = require('../core/api-key.cjs');
 const path = require('path');
 const fs = require('fs');
 
@@ -28,7 +29,7 @@ const fs = require('fs');
 // CONSTANTS
 // =============================================================================
 
-const HAIKU_MODEL = 'claude-3-5-haiku-20241022';
+const HAIKU_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 1024;
 
 // Source mapping
@@ -160,9 +161,14 @@ class HaikuWorker {
 
     // Initialize Anthropic client only if no sampling adapter provided
     if (!this.samplingAdapter) {
-      this.client = new Anthropic({
-        apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
-      });
+      const apiKey = options.apiKey || getApiKey();
+      if (apiKey) {
+        this.client = new Anthropic({ apiKey });
+      } else {
+        // No API key — disable API calls, run in local-only mode
+        this.client = null;
+        this.enableApiCalls = false;
+      }
     } else {
       this.client = null;
     }

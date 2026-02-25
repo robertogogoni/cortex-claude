@@ -19,6 +19,7 @@ const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { getApiKey } = require('../core/api-key.cjs');
 
 // =============================================================================
 // CONFIGURATION
@@ -27,7 +28,7 @@ const path = require('path');
 const CONFIG = {
   // API settings
   apiKeyEnvVar: 'ANTHROPIC_API_KEY',
-  model: 'claude-3-5-haiku-20241022',
+  model: 'claude-haiku-4-5-20251001',
   maxTokens: 800,
   timeout: 10000,
 
@@ -216,10 +217,10 @@ function saveAdaptations(adaptations) {
  * @returns {Promise<Object>}
  */
 async function callHaiku(query, options = {}) {
-  const apiKey = process.env[CONFIG.apiKeyEnvVar];
+  const apiKey = getApiKey();
 
   if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY not set');
+    throw new Error('No Anthropic API key found. Add ANTHROPIC_API_KEY=sk-ant-... to ~/.claude/.env');
   }
 
   const systemPrompt = `You are a semantic query analyzer for a memory retrieval system. Analyze the user's query and provide structured analysis.
@@ -463,7 +464,7 @@ class SemanticIntentAnalyzer {
 
     // Try Haiku API
     let result;
-    if (this.useHaiku && process.env[CONFIG.apiKeyEnvVar]) {
+    if (this.useHaiku && getApiKey()) {
       try {
         result = await callHaiku(query, options);
         result.source = 'haiku';
@@ -656,7 +657,7 @@ class SemanticIntentAnalyzer {
       adaptationPatterns: Object.keys(this.adaptations.patterns).length,
       haiku: {
         enabled: this.useHaiku,
-        apiKeySet: !!process.env[CONFIG.apiKeyEnvVar],
+        apiKeySet: !!getApiKey(),
       },
     };
   }

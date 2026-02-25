@@ -42,7 +42,7 @@ class VectorSearchAdapter extends BaseAdapter {
     super({
       name: 'vector',
       priority: 0.95,  // High priority - best semantic understanding
-      timeout: 500,    // Local computation, may need time for first model load
+      timeout: 500,    // Will be overridden by dynamic getter below
       enabled: config.enabled !== false,
     });
 
@@ -51,6 +51,18 @@ class VectorSearchAdapter extends BaseAdapter {
     this.bm25Weight = config.bm25Weight || 0.4;
     this.rrfK = config.rrfK || 60;
     this.minScore = config.minScore || 0.1;
+
+    // Dynamic timeout: cold start needs more time for model loading + index init
+    this._queryTimeout = 500;             // Warm queries: local computation
+    this._coldStartTimeout = config.coldStartTimeout || 5000;  // First query: model load + SQLite + HNSW
+
+    // Replace static timeout with dynamic getter
+    delete this.timeout;
+    Object.defineProperty(this, 'timeout', {
+      get: () => this._provider?.initialized ? this._queryTimeout : this._coldStartTimeout,
+      enumerable: true,
+      configurable: true,
+    });
 
     // VectorSearchProvider instance (lazy-loaded)
     this._provider = null;

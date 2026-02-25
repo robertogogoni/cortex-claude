@@ -20,26 +20,30 @@
  * Sonnet tools: Lower limits (expensive, slow)
  */
 const DEFAULT_LIMITS = {
-  // Haiku-powered (fast, cheap ~$0.25/1M tokens)
-  'cortex__query': { perMinute: 30, perHour: 300, perDay: 1000 },
-  'cortex__recall': { perMinute: 30, perHour: 300, perDay: 1000 },
+  // Haiku-powered (fast, cheap ~$0.25/1M tokens) — maxed out for power users
+  'cortex__query': { perMinute: 120, perHour: 3000, perDay: 50000 },
+  'cortex__recall': { perMinute: 120, perHour: 3000, perDay: 50000 },
 
-  // Sonnet-powered (slow, expensive ~$3/1M tokens)
-  'cortex__reflect': { perMinute: 10, perHour: 60, perDay: 200 },
-  'cortex__infer': { perMinute: 10, perHour: 60, perDay: 200 },
-  'cortex__learn': { perMinute: 15, perHour: 100, perDay: 300 },
-  'cortex__consolidate': { perMinute: 5, perHour: 20, perDay: 50 },
+  // Sonnet-powered (expensive ~$3/1M tokens) — generous for heavy use
+  'cortex__reflect': { perMinute: 60, perHour: 600, perDay: 5000 },
+  'cortex__infer': { perMinute: 60, perHour: 600, perDay: 5000 },
+  'cortex__learn': { perMinute: 60, perHour: 1000, perDay: 10000 },
+  'cortex__consolidate': { perMinute: 30, perHour: 300, perDay: 2000 },
+
+  // Episodic memory tools — unlimited tier for conversation search
+  'cortex__search_conversations': { perMinute: 120, perHour: 3000, perDay: 50000 },
+  'cortex__show_conversation': { perMinute: 120, perHour: 3000, perDay: 50000 },
 };
 
 /**
  * Burst allowance multiplier (allows temporary spikes)
  */
-const BURST_MULTIPLIER = 1.5;
+const BURST_MULTIPLIER = 3.0;
 
 /**
  * Cooldown period after hitting limits (ms)
  */
-const COOLDOWN_MS = 60000; // 1 minute
+const COOLDOWN_MS = 10000; // 10 seconds (reduced for power users)
 
 // =============================================================================
 // RATE LIMITER CLASS
