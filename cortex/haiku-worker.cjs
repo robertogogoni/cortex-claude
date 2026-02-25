@@ -304,17 +304,17 @@ class HaikuWorker {
    * @returns {Promise<string|null>} Hypothetical document or null if expansion fails
    */
   async _hydeExpand(query) {
-    if (!this.enableApiCalls) {
-      return null;
-    }
-
-    // Check cache first
+    // Check cache first (local operation — no API needed)
     const cached = this.analysisCache.get(query, 'hyde');
     if (cached) {
       this.stats.hydeCacheHits++;
       this.stats.cacheHits++;
       this._log('HyDE: cache hit');
       return cached;
+    }
+
+    if (!this.enableApiCalls) {
+      return null;
     }
 
     const systemPrompt = `You are a technical knowledge base. Given a search query, write a short (2-3 sentence) document that would be a PERFECT answer to this query. Be specific, technical, and use concrete details. Do NOT ask questions or hedge - write as if you are the ideal search result.`;
