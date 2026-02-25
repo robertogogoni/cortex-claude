@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/tests-406%2F406-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-447%2F447-success.svg)](tests/)
 [![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange.svg)]()
 [![Security](https://img.shields.io/badge/security-AES--256--GCM-green.svg)]()
 [![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet.svg)](ROADMAP.md)
@@ -607,7 +607,7 @@ node tests/test-hyde.cjs                # HyDE query expansion
 node tests/test-lads.cjs                # LADS framework
 ```
 
-**Current Status**: 406/406 tests passing across 22 test suites
+**Current Status**: 447/447 tests passing across 22 test suites (including 2 live integration suites)
 
 ## Troubleshooting
 
