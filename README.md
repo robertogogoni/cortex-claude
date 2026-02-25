@@ -1,97 +1,67 @@
+<div align="center">
+
 # Cortex - Claude's Cognitive Layer
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)]()
-[![Tests](https://img.shields.io/badge/tests-142%2F142%20passing-brightgreen)]()
-[![Lines of Code](https://img.shields.io/badge/lines-94%2C693-informational)]()
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)]()
-[![MCP](https://img.shields.io/badge/MCP-6%20tools%20%7C%207%20resources%20%7C%205%20prompts-purple)]()
-[![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange)]()
-[![Security](https://img.shields.io/badge/security-AES--256--GCM-green)]()
-[![License](https://img.shields.io/badge/license-MIT-green)]()
-[![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet)](ROADMAP.md)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)
+[![Tests](https://img.shields.io/badge/tests-142%2F142-success.svg)](tests/)
+[![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange.svg)]()
+[![Security](https://img.shields.io/badge/security-AES--256--GCM-green.svg)]()
+[![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet.svg)](ROADMAP.md)
 
-**A dual-model cognitive layer for Claude Code** that provides true cross-session memory through auto-extraction, auto-recall, MCP tools for deep reasoning, vector search, and compounding learnings.
+**Persistent cross-session memory for Claude Code with dual-model AI reasoning**
+
+[Quick Start](#quick-start) | [How It Works](#architecture) | [Commands](#the-cortex-skill) | [Roadmap](ROADMAP.md)
+
+</div>
 
 ## Why Cortex?
 
-Claude Code is powerful, but it forgets everything between sessions. Cortex solves this with a dual-model architecture:
+Claude Code is powerful, but it forgets everything between sessions. Cortex solves this with a dual-model cognitive layer:
 
-| Problem | Cortex Solution |
-|---------|-----------------|
-| Claude forgets context | **Auto-recall**: Injects relevant memories at session start |
-| Learnings are lost | **Auto-extraction**: Captures insights from every session |
-| Slow keyword search | **Vector Search**: HNSW + BM25 hybrid with RRF fusion (94% faster) |
-| No deep reasoning tools | **MCP Server**: 6 tools for query, recall, reflect, infer, learn, consolidate |
-| Expensive API calls | **Dual-model**: Haiku for fast ops (~$0.25/1M), Sonnet for deep reasoning (~$3/1M) |
-| Manual memory management | **Fully automatic**: Zero user intervention required |
+| Problem | How Others Solve It | How Cortex Solves It |
+|---------|--------------------|--------------------|
+| Claude forgets everything between sessions | CLAUDE.md files (manual) | **Auto-extraction** at session end + **auto-injection** at session start |
+| Context lost when window compresses | Nothing (data lost forever) | **PreCompact hook** saves critical context before compression |
+| Memory search is keyword-only | Basic text matching | **Hybrid vector search** (HNSW + BM25 + Reciprocal Rank Fusion) |
+| No reasoning about memories | Store and retrieve | **Dual-model**: Haiku queries + Sonnet reflects/infers/learns |
+| Memory grows without limit | Manual cleanup | **LADS framework**: auto-consolidation, decay, tier promotion |
+| No cost visibility | Hidden API costs | **Per-operation costs** shown: query ~$0.001, reflect ~$0.01 |
 
 ## Architecture
 
-```
-+======================================================================+
-|                        CLAUDE CODE SESSION                           |
-+======================================================================+
-                                 |
-                                 v
-+======================================================================+
-|                        CORTEX MCP SERVER                             |
-+----------------------------------------------------------------------+
-|                                                                      |
-|   +------------------------+      +---------------------------+      |
-|   |     HAIKU WORKER       |      |     SONNET THINKER        |      |
-|   |     (Fast, Cheap)      |      |     (Deep Reasoning)      |      |
-|   |                        |      |                           |      |
-|   |   o query              |      |   * reflect               |      |
-|   |   o recall             |      |   * infer                 |      |
-|   |                        |      |   * learn                 |      |
-|   |   ~$0.25/1M tokens     |      |   * consolidate           |      |
-|   |                        |      |   ~$3/1M tokens           |      |
-|   +----------+-------------+      +-----------+---------------+      |
-|              |                                |                      |
-|              +----------------+---------------+                      |
-|                               |                                      |
-|                               v                                      |
-|   +----------------------------------------------------------+      |
-|   |              VECTOR SEARCH ENGINE (NEW)                   |      |
-|   |                                                           |      |
-|   |    HNSW Index    |    BM25    |    RRF Fusion            |      |
-|   |    672 vectors   |   FTS5     |   Hybrid ranking         |      |
-|   |                                                           |      |
-|   |    Local Embeddings: all-MiniLM-L6-v2 (384 dim)          |      |
-|   +----------------------------------------------------------+      |
-|                                                                      |
-+======================================================================+
-                    |                           |
-        +-----------+-----------+   +-----------+-------------+
-        |    SESSION START      |   |      SESSION END        |
-        |-----------------------|   |-------------------------|
-        |  - Context Analyzer   |   |  - Extraction Engine    |
-        |  - Query Orchestrator |   |  - Pattern Tracker      |
-        |  - Memory Injection   |   |  - Outcome Scorer       |
-        +-----------------------+   +-------------------------+
-                    |                           |
-                    +-------------+-------------+
-                                  |
-                                  v
-        +------------------------------------------------------+
-        |               CORE INFRASTRUCTURE                     |
-        |                                                       |
-        |  +----------+  +----------+  +----------+  +-------+  |
-        |  |  JSONL   |  |   Lock   |  |  Write   |  | Error |  |
-        |  | Storage  |  | Manager  |  |  Queue   |  |Handler|  |
-        |  +----------+  +----------+  +----------+  +-------+  |
-        +------------------------------------------------------+
-                                  |
-                                  v
-        +------------------------------------------------------+
-        |                  LADS LAYER                           |
-        |   Learnable | Adaptive | Documenting | Self-improving |
-        |                                                       |
-        |  +---------------+  +--------------+  +------------+  |
-        |  |    Config     |  |   Pattern    |  |    Docs    |  |
-        |  |   Evolver     |  |   Tracker    |  |   Writer   |  |
-        |  +---------------+  +--------------+  +------------+  |
-        +------------------------------------------------------+
+```mermaid
+graph TB
+    subgraph "Claude Code Session"
+        CC[Claude Code] -->|SessionStart| SS[Session Start Hook]
+        CC -->|SessionEnd| SE[Session End Hook]
+        CC -->|PreCompact| PC[PreCompact Hook]
+        CC -->|MCP Tools| MCP[Cortex MCP Server]
+    end
+
+    subgraph "Dual-Model Engine"
+        MCP -->|Fast queries| H[Haiku Worker<br/>~$0.001/call]
+        MCP -->|Deep reasoning| S[Sonnet Thinker<br/>~$0.01/call]
+    end
+
+    subgraph "Memory Layers"
+        H --> WM[Working Memory<br/>< 24h, max 50]
+        H --> ST[Short-Term<br/>1-7 days, max 200]
+        H --> LT[Long-Term<br/>Permanent, quality-filtered]
+        S --> INS[Insights & Learnings]
+    end
+
+    subgraph "Search Engine"
+        H --> VS[Vector Search<br/>HNSW + BM25]
+        VS --> RRF[Reciprocal Rank Fusion]
+    end
+
+    SE -->|Extract| EE[Extraction Engine]
+    EE -->|Store| WM
+    WM -->|Promote| ST
+    ST -->|Promote| LT
 ```
 
 ## Vector Search Engine
@@ -372,18 +342,29 @@ Prompts standardize common cognitive workflows:
 - **Efficiency**: No need to remember which tools to use for each task
 - **Best Practices**: Built-in patterns for effective memory usage
 
+## How Cortex Compares
+
+| Feature | Cortex | server-memory | mcp-memory-service | Vestige | total-recall |
+|---------|--------|---------------|-------------------|---------|-------------|
+| Dual-model reasoning | :white_check_mark: | :x: | :x: | :x: | :x: |
+| MCP Tools | :white_check_mark: 7 | :x: | :white_check_mark: 13 | :white_check_mark: 21 | :x: |
+| MCP Resources | :white_check_mark: | :x: | :x: | :x: | :x: |
+| MCP Prompts | :white_check_mark: | :x: | :x: | :x: | :x: |
+| Session Hooks | :white_check_mark: 3 | :x: | :x: | :x: | :white_check_mark: 2 |
+| Vector Search | :white_check_mark: Hybrid | :x: | :white_check_mark: | :white_check_mark: HNSW | :x: |
+| Auto-extraction | :white_check_mark: | :x: | :x: | :x: | :x: |
+| Tier Promotion | :white_check_mark: 3-tier | :x: | :x: | :x: | :white_check_mark: 4-tier |
+| LADS Framework | :white_check_mark: | :x: | :x: | :x: | :x: |
+| Write Gates | Planned | :x: | :x: | :white_check_mark: | :white_check_mark: |
+| Confidence Decay | Planned | :x: | :x: | :white_check_mark: FSRS-6 | :x: |
+
 ## MCP Sampling Note
 
-Cortex intentionally uses **direct Anthropic API calls** rather than MCP Sampling for LLM operations. This design choice provides:
+Cortex currently uses **direct Anthropic API calls** for LLM operations (requires `ANTHROPIC_API_KEY`). Migration to **MCP Sampling** is planned for v3.0, which will:
 
-| Feature | Direct API | MCP Sampling |
-|---------|------------|--------------|
-| **Model Selection** | Haiku/Sonnet per-operation | Single client model |
-| **Cost Control** | Fine-grained (~$0.25 vs $3/1M) | Fixed client pricing |
-| **Latency** | Direct to API | Extra MCP round-trip |
-| **Customization** | Custom prompts, temperature | Limited parameters |
-
-This architecture enables Cortex to use the cheapest model (Haiku) for fast queries while reserving Sonnet for deep reasoning operations.
+- **Eliminate API key requirements** — route LLM calls through the host Claude session at zero cost
+- **Use `modelPreferences` hints** — request Haiku-class speed or Sonnet-class intelligence per operation
+- **Maintain dual-model behavior** — `speedPriority: 1.0` for queries, `intelligencePriority: 1.0` for reasoning
 
 ## Quick Start
 
