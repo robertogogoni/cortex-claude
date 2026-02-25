@@ -44,6 +44,15 @@ const sessionEndHook = {
     }]
 };
 
+const preCompactHook = {
+    matcher: "*",
+    hooks: [{
+        type: "command",
+        command: `node ${CORTEX_DIR}/hooks/pre-compact.cjs`
+    }],
+    description: "Cortex: Preserve critical context before compaction"
+};
+
 // Add/update SessionStart hooks
 if (!settings.hooks.SessionStart) {
     settings.hooks.SessionStart = [];
@@ -64,10 +73,21 @@ settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(h =>
 );
 settings.hooks.SessionEnd.push(sessionEndHook);
 
+// Add/update PreCompact hooks
+if (!settings.hooks.PreCompact) {
+    settings.hooks.PreCompact = [];
+}
+// Remove any existing Cortex hooks first
+settings.hooks.PreCompact = settings.hooks.PreCompact.filter(h =>
+    !h.hooks?.some(hh => hh.command?.includes('memory/hooks/pre-compact'))
+);
+settings.hooks.PreCompact.push(preCompactHook);
+
 // Write updated settings
 fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 
 console.log('✅ SessionStart hook registered');
 console.log('✅ SessionEnd hook registered');
+console.log('✅ PreCompact hook registered');
 console.log('');
 console.log('Cortex hooks installed! Restart Claude Code for changes to take effect.');
