@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/tests-153%2F153-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-406%2F406-success.svg)](tests/)
 [![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange.svg)]()
 [![Security](https://img.shields.io/badge/security-AES--256--GCM-green.svg)]()
 [![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet.svg)](ROADMAP.md)
@@ -151,20 +151,26 @@ After installation, you can use these commands:
 
 ### Visual Feedback
 
-When Cortex processes, you'll see neural activity indicators:
+Cortex uses a modern Clack-style CLI renderer with real-time streaming:
 
 ```
-+--------------------------------------+
-|  CORTEX ============================  |
-|     .  ~  .  ~  .  ~  .              |
-|    o---o---o     *---*---*           |
-|     Haiku          Sonnet            |
-|     querying...                      |
-+--------------------------------------+
+  ◆  C O R T E X  v3.0.0
+  │
+  ◇  Querying 7 adapters...
+  │  ✓ jsonl          142 memories   95ms  ████████████████████
+  │  ✓ claudemd        26 memories  148ms  ███░░░░░░░░░░░░░░░░░
+  │  ✓ gemini            8 memories  403ms  █░░░░░░░░░░░░░░░░░░░
+  │  ✓ vector          189 memories 1.5s   █████████████░░░░░░░ ❄
+  │  ✗ demo-fail       Timeout
+  │
+  └  Done in 2.3s · 47 of 774 memories · 1,545 / 4,000 tokens
+     ████████░░░░░░░░░░░░  38%
 ```
 
-- **o Circles** = Haiku (fast, cheap queries)
-- **\* Stars** = Sonnet (deep reasoning)
+- **Streaming results**: Adapters appear as they complete (fast first)
+- **Token budget bar**: Green (<70%), yellow (70-90%), red (>90%)
+- **Cold start marker**: Snowflake `❄` on first-time adapter initialization
+- **NO_COLOR support**: Respects `NO_COLOR` env var and pipe detection
 
 ### How to Know Cortex is Working
 
@@ -591,13 +597,17 @@ Cortex uses JSONL (JSON Lines) format for efficient append-only storage:
 npm test
 
 # Run individual test suites
-npm run test:core   # 34 tests - core infrastructure
-npm run test:hooks  # 25 tests - hook components
-npm run test:lads   # 31 tests - LADS components
-npm run test:vector # 52 tests - vector search (new)
+node tests/test-adapters.cjs            # 48 tests - adapter registry & callbacks
+node tests/test-cli-renderer.cjs        # 44 tests - CortexRenderer visual engine
+node tests/test-episodic-sqlite.cjs     # 23 tests - episodic memory SQLite
+node tests/test-knowledge-graph-sqlite.cjs # 24 tests - knowledge graph SQLite
+node tests/test-core.cjs                # core infrastructure
+node tests/test-hooks.cjs               # hook components
+node tests/test-hyde.cjs                # HyDE query expansion
+node tests/test-lads.cjs                # LADS framework
 ```
 
-**Current Status**: 153/153 tests passing
+**Current Status**: 406/406 tests passing across 22 test suites
 
 ## Troubleshooting
 
