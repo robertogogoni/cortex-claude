@@ -1,0 +1,20 @@
+{
+  "name": "cortex",
+  "version": "3.0.0",
+  "description": "Claude's Cognitive Layer - Cross-session memory with dual-model reasoning",
+  "mcpServers": {
+    "cortex": {
+      "command": "node",
+      "args": ["cortex/server.cjs"],
+      "cwd": "${PLUGIN_ROOT}"
+    }
+  },
+  "hooks": {
+    "SessionStart": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${PLUGIN_ROOT}/hooks/session-start.cjs" }] }],
+    "SessionEnd": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${PLUGIN_ROOT}/hooks/session-end.cjs" }] }],
+    "PreCompact": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${PLUGIN_ROOT}/hooks/pre-compact.cjs" }] }],
+    "Stop": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${PLUGIN_ROOT}/hooks/stop-hook.cjs" }] }]
+  },
+  "skills": ["skills/cortex"],
+  "postInstall": "npm install --production"
+}
