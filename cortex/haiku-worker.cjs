@@ -13,7 +13,7 @@
  *
  * Cost: ~$0.25/1M tokens (~50-100 calls/session = ~$0.025/session)
  *
- * @version 2.0.0
+ * @version 3.0.0
  */
 
 'use strict';
@@ -194,9 +194,13 @@ class HaikuWorker {
       apiCalls: 0,
       cachedAnalysis: 0,
       cachedRanking: 0,
+      hydeExpansions: 0,
+      hydeCacheHits: 0,
+      hydeFallbacks: 0,
       timings: {
         totalQueryMs: 0,
         analysisMs: 0,
+        hydeMs: 0,
         orchestratorMs: 0,
         rankingMs: 0,
         avgQueryMs: 0,
@@ -278,6 +282,55 @@ class HaikuWorker {
   }
 
   /**
+   * HyDE (Hypothetical Document Embeddings) query expansion
+   *
+   * Generates a hypothetical answer document for the query, then uses
+   * that document for searching instead of the raw query. This works
+   * because the hypothetical document occupies the same semantic space
+   * as real relevant documents, while the query (a question) lives in
+   * a different part of embedding space.
+   *
+   * Reference: Gao et al., "Precise Zero-Shot Dense Retrieval without
+   * Relevance Labels" (2022)
+   *
+   * @private
+   * @param {string} query - Original search query
+   * @returns {Promise<string|null>} Hypothetical document or null if expansion fails
+   */
+  async _hydeExpand(query) {
+    if (!this.enableApiCalls) {
+      return null;
+    }
+
+    // Check cache first
+    const cached = this.analysisCache.get(query, 'hyde');
+    if (cached) {
+      this.stats.hydeCacheHits++;
+      this.stats.cacheHits++;
+      this._log('HyDE: cache hit');
+      return cached;
+    }
+
+    const systemPrompt = `You are a technical knowledge base. Given a search query, write a short (2-3 sentence) document that would be a PERFECT answer to this query. Be specific, technical, and use concrete details. Do NOT ask questions or hedge - write as if you are the ideal search result.`;
+
+    try {
+      const result = await this._callHaiku(systemPrompt, query);
+      if (result && result.trim().length > 20) {
+        // Cache the hypothetical document
+        this.analysisCache.set(query, 'hyde', result);
+        this.stats.hydeExpansions++;
+        this._log(`HyDE: generated ${result.length} chars`);
+        return result;
+      }
+    } catch (error) {
+      this._log(`HyDE: expansion failed: ${error.message}`);
+    }
+
+    this.stats.hydeFallbacks++;
+    return null;
+  }
+
+  /**
    * Search all memory sources for relevant context
    *
    * @param {string} query - Natural language query
@@ -287,7 +340,7 @@ class HaikuWorker {
    */
   async query(query, sources = ['all'], limit = 10) {
     const startTime = Date.now();
-    const timings = { analysis: 0, orchestrator: 0, ranking: 0 };
+    const timings = { analysis: 0, hyde: 0, orchestrator: 0, ranking: 0 };
 
     // Step 1: Use Haiku to extract keywords and classify intent (with cache)
     const analysisStart = Date.now();
@@ -334,6 +387,26 @@ Respond in JSON format:
     timings.analysis = Date.now() - analysisStart;
     this._log(`Analysis: ${timings.analysis}ms (cached: ${analysisCached})`);
 
+    // Step 1.5: HyDE query expansion
+    // Generate a hypothetical answer document and use it as the search query.
+    // The hypothetical doc lives in the same embedding space as real documents,
+    // while the original query (a question) may not. This improves conceptual recall.
+    const hydeStart = Date.now();
+    let hydeDoc = null;
+    let searchQuery = query; // Default: use original query
+
+    if (this.enableApiCalls) {
+      hydeDoc = await this._hydeExpand(query);
+      if (hydeDoc) {
+        // Combine original query with HyDE document for best of both worlds:
+        // - Original query catches exact keyword matches
+        // - HyDE document catches conceptual/semantic matches
+        searchQuery = `${query}\n\n${hydeDoc}`;
+      }
+    }
+    timings.hyde = Date.now() - hydeStart;
+    this._log(`HyDE: ${timings.hyde}ms (expanded: ${!!hydeDoc})`);
+
     // Step 2: Query memory sources via orchestrator
     const orchestratorStart = Date.now();
     const adaptersToQuery = sources.includes('all')
@@ -341,7 +414,7 @@ Respond in JSON format:
       : sources.map(s => SOURCE_MAP[s]).filter(Boolean);
 
     const results = await this.orchestrator.query({
-      prompt: query,
+      prompt: searchQuery,
       types: ['skill', 'pattern', 'decision', 'insight', 'learning'],
       adapters: adaptersToQuery,
       useSemantic: false, // Disabled - we handle analysis ourselves
@@ -426,15 +499,17 @@ Respond with JSON array of scores matching the input order:
     // Update timing stats
     this.stats.timings.totalQueryMs += duration;
     this.stats.timings.analysisMs += timings.analysis;
+    this.stats.timings.hydeMs += timings.hyde;
     this.stats.timings.orchestratorMs += timings.orchestrator;
     this.stats.timings.rankingMs += timings.ranking;
     this.stats.timings.avgQueryMs = Math.round(this.stats.timings.totalQueryMs / Math.max(1, this.stats.queriesMade));
 
-    this._log(`Total: ${duration}ms (analysis: ${timings.analysis}ms, search: ${timings.orchestrator}ms, rank: ${timings.ranking}ms)`);
+    this._log(`Total: ${duration}ms (analysis: ${timings.analysis}ms, hyde: ${timings.hyde}ms, search: ${timings.orchestrator}ms, rank: ${timings.ranking}ms)`);
 
     return {
       query,
       analysis,
+      hyde: hydeDoc ? { expanded: true, documentLength: hydeDoc.length } : { expanded: false },
       memories: rankedMemories,
       sources: results.sources || [],
       stats: {
@@ -445,6 +520,7 @@ Respond with JSON array of scores matching the input order:
         apiCalls: this.stats.apiCalls,
         cacheHits: this.stats.cacheHits,
         analysisCached,
+        hydeExpanded: !!hydeDoc,
         usedApiRanking,
       },
     };

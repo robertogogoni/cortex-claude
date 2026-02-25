@@ -1,11 +1,11 @@
 {
   "name": "cortex-memory",
-  "version": "2.0.0",
-  "description": "Claude's Cognitive Layer - Dual-model memory system with auto-extraction, auto-recall, and MCP tools for deep reasoning",
+  "version": "3.0.0",
+  "description": "Claude's Cognitive Layer - Zero-cost dual-model memory with MCP Sampling, HyDE search, write gates, and bi-temporal knowledge",
   "main": "index.cjs",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs && node tests/test-sqlite-store.cjs",
+    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs && node tests/test-sqlite-store.cjs && node tests/test-hyde.cjs",
     "test:core": "node tests/test-core.cjs",
     "test:sqlite": "node tests/test-sqlite-store.cjs",
     "test:hooks": "node tests/test-hooks.cjs",
