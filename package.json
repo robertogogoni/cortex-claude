@@ -5,7 +5,7 @@
   "main": "index.cjs",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs && node tests/test-sqlite-store.cjs && node tests/test-hyde.cjs",
+    "test": "node tests/test-core.cjs && node tests/test-hooks.cjs && node tests/test-lads.cjs && node tests/test-sqlite-store.cjs && node tests/test-hyde.cjs && node tests/test-cli-renderer.cjs && node tests/test-adapters.cjs && node tests/test-bitemporal.cjs && node tests/test-decay.cjs && node tests/test-write-gate.cjs && node tests/test-pre-compact.cjs && node tests/test-stop-hook.cjs && node tests/test-elicitation.cjs && node tests/test-sampling-adapter.cjs",
     "test:core": "node tests/test-core.cjs",
     "test:sqlite": "node tests/test-sqlite-store.cjs",
     "test:hooks": "node tests/test-hooks.cjs",
