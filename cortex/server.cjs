@@ -934,15 +934,33 @@ This provides a comprehensive project briefing.`
         throw validationError;
       }
 
+      // Neural formatter for MCP tool responses (plain text, no ANSI)
+      const { NeuralFormatter } = require('../hooks/neural-visuals.cjs');
+      const neuralFormatter = new NeuralFormatter({ includeColors: false });
+
       switch (name) {
         // Haiku-powered tools
-        case 'cortex__query':
-          result = await haiku.query(validatedArgs.query, validatedArgs.sources, validatedArgs.limit);
+        case 'cortex__query': {
+          const queryResult = await haiku.query(validatedArgs.query, validatedArgs.sources, validatedArgs.limit);
+          const formatted = neuralFormatter.formatForMCP(
+            queryResult.memories || [],
+            { projectName: queryResult.query },
+            queryResult.stats || {}
+          );
+          result = formatted;
           break;
+        }
 
-        case 'cortex__recall':
-          result = await haiku.recall(validatedArgs.context, validatedArgs.type);
+        case 'cortex__recall': {
+          const recallResult = await haiku.recall(validatedArgs.context, validatedArgs.type);
+          const formatted = neuralFormatter.formatForMCP(
+            recallResult.memories || [],
+            { projectName: recallResult.context },
+            recallResult.stats || {}
+          );
+          result = formatted;
           break;
+        }
 
         // Sonnet-powered tools
         case 'cortex__reflect':

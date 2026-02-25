@@ -926,6 +926,91 @@ class NeuralFormatter {
   }
 
   /**
+   * Format memories for MCP tool responses (plain text, no ANSI colors)
+   *
+   * Uses Unicode box-drawing characters for visual structure while
+   * remaining readable in plain text MCP responses displayed by Claude.
+   *
+   * @param {Array} memories - Array of memory objects
+   * @param {Object} context - Context info (projectName, gitBranch, etc.)
+   * @param {Object} stats - Statistics (totalFound, returned, duration, etc.)
+   * @returns {string} Formatted plain text output
+   */
+  formatForMCP(memories, context = {}, stats = {}) {
+    const lines = [];
+
+    // Header with box-drawing
+    lines.push('');
+    lines.push('\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510');
+    lines.push('\u2502  CORTEX \u00b7 Neural Memory System          \u2502');
+    lines.push('\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518');
+
+    if (!memories || memories.length === 0) {
+      lines.push('');
+      lines.push('  (no relevant memories found)');
+      lines.push('');
+      return lines.join('\n');
+    }
+
+    // Stats line
+    const returned = stats.returned || memories.length;
+    const totalFound = stats.totalFound || returned;
+    const duration = stats.duration ? `${stats.duration}ms` : '';
+    lines.push(`  ${returned} of ${totalFound} memories${duration ? ' \u00b7 ' + duration : ''}`);
+    lines.push('');
+
+    // Group by type
+    const byType = this._groupByType(memories);
+
+    for (const [type, typeMemories] of Object.entries(byType)) {
+      // Section header
+      lines.push(`\u250C\u2500\u2500 ${type.toUpperCase()} (${typeMemories.length}) ${'─'.repeat(Math.max(0, 34 - type.length))}\u2510`);
+
+      typeMemories.forEach((memory, index) => {
+        const isLast = index === typeMemories.length - 1;
+        const prefix = isLast ? '\u2514\u2500\u25CF ' : '\u251C\u2500\u25CB ';
+        const content = (memory.summary || memory.content || '').substring(0, 200);
+        const truncated = content.length >= 200 ? content + '...' : content;
+
+        // Relevance score
+        const score = memory.relevanceScore !== undefined
+          ? ` [${Math.round(memory.relevanceScore)}%]`
+          : '';
+
+        lines.push(`${prefix}${truncated}${score}`);
+
+        // Tags if present
+        if (memory.tags?.length) {
+          const indent = isLast ? '    ' : '\u2502   ';
+          lines.push(`${indent}tags: ${memory.tags.slice(0, 5).join(', ')}`);
+        }
+      });
+
+      lines.push('');
+    }
+
+    // Context footer
+    if (context.projectName || context.gitBranch) {
+      lines.push('\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
+      if (context.projectName) lines.push(`  project: ${context.projectName}`);
+      if (context.gitBranch) lines.push(`  branch: ${context.gitBranch}`);
+      lines.push('');
+    }
+
+    // Cache/performance info if available
+    if (stats.analysisCached !== undefined || stats.cacheHits !== undefined) {
+      const cacheInfo = [];
+      if (stats.analysisCached) cacheInfo.push('analysis cached');
+      if (stats.cacheHits) cacheInfo.push(`${stats.cacheHits} cache hits`);
+      if (cacheInfo.length > 0) {
+        lines.push(`  [${cacheInfo.join(' \u00b7 ')}]`);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
    * Format empty result
    */
   _formatEmpty(context) {
