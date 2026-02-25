@@ -144,7 +144,7 @@ class InjectionFormatter {
 
     // Header
     lines.push('+' + '='.repeat(W) + '+');
-    lines.push('|' + '     CORTEX v2.0.0 - Relevant Memories for This Session'.padEnd(W) + '|');
+    lines.push('|' + `     CORTEX v${VERSION} - Relevant Memories for This Session`.padEnd(W) + '|');
     lines.push('+' + '='.repeat(W) + '+');
 
     // Stats summary
@@ -223,7 +223,7 @@ class InjectionFormatter {
     const lines = [];
 
     lines.push('<cortex-memories>');
-    lines.push(`<!-- Cortex v2.0.0 | ${memories.length} memories | ${stats.estimatedTokens || 0} tokens -->`);
+    lines.push(`<!-- Cortex v${VERSION} | ${memories.length} memories | ${stats.estimatedTokens || 0} tokens -->`);
     lines.push('');
 
     const byType = this._groupByType(memories);
