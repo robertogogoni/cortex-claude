@@ -71,14 +71,22 @@ class SonnetThinker {
    * @param {Object} options
    * @param {string} options.basePath - Base path for memory storage
    * @param {string} options.apiKey - Anthropic API key
+   * @param {Object} options.samplingAdapter - SamplingAdapter instance for zero-cost MCP Sampling
    */
   constructor(options = {}) {
     this.basePath = options.basePath || path.join(process.env.HOME, '.claude', 'memory');
 
-    // Initialize Anthropic client
-    this.client = new Anthropic({
-      apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+    // SamplingAdapter for zero-cost MCP Sampling (preferred over direct API)
+    this.samplingAdapter = options.samplingAdapter || null;
+
+    // Initialize Anthropic client only if no sampling adapter provided
+    if (!this.samplingAdapter) {
+      this.client = new Anthropic({
+        apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
+      });
+    } else {
+      this.client = null;
+    }
 
     // Initialize query orchestrator for memory access
     this.orchestrator = new QueryOrchestrator({
@@ -249,7 +257,24 @@ class SonnetThinker {
     const estimatedInputTokens = Math.ceil((systemPrompt.length + userMessage.length) / 4);
     const estimated = estimateCost(estimatedInputTokens, maxTokens);
 
-    // Show cost warning for larger operations
+    // Prefer SamplingAdapter (zero-cost via MCP Sampling)
+    if (this.samplingAdapter) {
+      try {
+        const prompt = `${systemPrompt}\n\n${userMessage}`;
+        const result = await this.samplingAdapter.complete(prompt, {
+          speed: 'deep',
+          maxTokens,
+          systemPrompt,
+        });
+        return result.text;
+      } catch (error) {
+        process.stderr.write(`[SonnetThinker] Sampling error: ${error.message}\n`);
+        // Fall through to direct API if available
+        if (!this.client) throw error;
+      }
+    }
+
+    // Show cost warning for larger operations (direct API only)
     if (estimated.cost > 0.005) {
       process.stderr.write(`[Cortex] Sonnet operation - estimated cost: ${estimated.display}\n`);
     }

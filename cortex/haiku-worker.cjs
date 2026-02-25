@@ -148,16 +148,24 @@ class HaikuWorker {
    * @param {string} options.apiKey - Anthropic API key (uses ANTHROPIC_API_KEY env if not provided)
    * @param {boolean} options.enableApiCalls - Enable Haiku API calls (default: true)
    * @param {boolean} options.verbose - Enable verbose timing logs (default: false)
+   * @param {Object} options.samplingAdapter - SamplingAdapter instance for zero-cost MCP Sampling
    */
   constructor(options = {}) {
     this.basePath = options.basePath || path.join(process.env.HOME, '.claude', 'memory');
     this.enableApiCalls = options.enableApiCalls !== false;
     this.verbose = options.verbose || false;
 
-    // Initialize Anthropic client
-    this.client = new Anthropic({
-      apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+    // SamplingAdapter for zero-cost MCP Sampling (preferred over direct API)
+    this.samplingAdapter = options.samplingAdapter || null;
+
+    // Initialize Anthropic client only if no sampling adapter provided
+    if (!this.samplingAdapter) {
+      this.client = new Anthropic({
+        apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
+      });
+    } else {
+      this.client = null;
+    }
 
     // Initialize query orchestrator (reuses existing infrastructure)
     // IMPORTANT: Disable semantic analysis in orchestrator to avoid DUPLICATE Haiku calls
@@ -217,6 +225,34 @@ class HaikuWorker {
     }
 
     const startTime = Date.now();
+
+    // Prefer SamplingAdapter (zero-cost via MCP Sampling)
+    if (this.samplingAdapter) {
+      try {
+        const prompt = systemPrompt
+          ? `${systemPrompt}\n\n${userMessage}`
+          : userMessage;
+        const result = await this.samplingAdapter.complete(prompt, {
+          speed: 'fast',
+          maxTokens: MAX_TOKENS,
+          systemPrompt: systemPrompt || undefined,
+        });
+
+        this.stats.queriesMade++;
+        this.stats.apiCalls++;
+
+        const elapsed = Date.now() - startTime;
+        this._log(`Haiku via ${result.mode}: ${elapsed}ms`);
+
+        return result.text;
+      } catch (error) {
+        process.stderr.write(`[HaikuWorker] Sampling error: ${error.message}\n`);
+        // Fall through to direct API if available
+        if (!this.client) return null;
+      }
+    }
+
+    // Direct API fallback
     try {
       const response = await this.client.messages.create({
         model: HAIKU_MODEL,

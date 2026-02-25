@@ -104,10 +104,10 @@ async function main() {
       capabilities: {
         tools: { listChanged: true },
         resources: { subscribe: false, listChanged: true },
-        prompts: { listChanged: true }
-        // Note: Sampling capability intentionally not declared
-        // Cortex uses direct Anthropic API calls for better cost control
-        // and model selection (Haiku for fast queries, Sonnet for deep reasoning)
+        prompts: { listChanged: true },
+        // Sampling is used via SamplingAdapter for zero-cost LLM calls
+        // through the host Claude. Falls back to direct Anthropic API
+        // when ANTHROPIC_API_KEY is set and MCP context is unavailable.
       }
     }
   );
@@ -843,9 +843,15 @@ This provides a comprehensive project briefing.`
   });
 
   // Handle tool calls with progress tracking
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, ctx) => {
     const { name, arguments: args } = request.params;
     const startTime = Date.now();
+
+    // Inject SamplingAdapter for zero-cost MCP Sampling
+    const { SamplingAdapter } = require('./sampling-adapter.cjs');
+    const samplingAdapter = new SamplingAdapter({ mcpContext: ctx?.mcpReq || null });
+    if (!haiku.samplingAdapter) haiku.samplingAdapter = samplingAdapter;
+    if (!sonnet.samplingAdapter) sonnet.samplingAdapter = samplingAdapter;
 
     // Get tool info for progress tracking
     const toolInfo = TOOL_MODELS[name] || { model: 'Unknown', estimatedMs: 1000 };
