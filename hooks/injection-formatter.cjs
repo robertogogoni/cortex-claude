@@ -338,7 +338,7 @@ class InjectionFormatter {
       lines.push('|' + ' '.repeat(W) + '|');
 
       for (const memory of typeMemories) {
-        const formattedMemory = this._formatSingleMemory(memory, 'rich');
+        const formattedMemory = this._formatSingleMemory(memory, this.formatType || 'neural');
         for (const line of formattedMemory.split('\n')) {
           const trimmedLine = '  ' + line;
           // Wrap long lines
@@ -549,7 +549,7 @@ class InjectionFormatter {
    * @param {string} style
    * @returns {string}
    */
-  _formatSingleMemory(memory, style = 'rich') {
+  _formatSingleMemory(memory, style = 'neural') {
     const lines = [];
 
     // Relevance indicator

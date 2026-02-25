@@ -97,7 +97,7 @@ async function main() {
   const server = new Server(
     {
       name: 'cortex',
-      version: '1.0.0',
+      version: '2.0.0',
       description: "Claude's Cognitive Layer - Intelligent memory with dual-model architecture"
     },
     {
