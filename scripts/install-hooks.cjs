@@ -44,6 +44,15 @@ const sessionEndHook = {
     }]
 };
 
+const stopHook = {
+    matcher: "*",
+    hooks: [{
+        type: "command",
+        command: `node ${CORTEX_DIR}/hooks/stop-hook.cjs`
+    }],
+    description: "Cortex: Lightweight capture after each response"
+};
+
 // Add/update SessionStart hooks
 if (!settings.hooks.SessionStart) {
     settings.hooks.SessionStart = [];
@@ -64,10 +73,21 @@ settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(h =>
 );
 settings.hooks.SessionEnd.push(sessionEndHook);
 
+// Add/update Stop hooks
+if (!settings.hooks.Stop) {
+    settings.hooks.Stop = [];
+}
+// Remove any existing Cortex stop hooks first
+settings.hooks.Stop = settings.hooks.Stop.filter(h =>
+    !h.hooks?.some(hh => hh.command?.includes('memory/hooks/stop-hook'))
+);
+settings.hooks.Stop.push(stopHook);
+
 // Write updated settings
 fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 
 console.log('✅ SessionStart hook registered');
 console.log('✅ SessionEnd hook registered');
+console.log('✅ Stop hook registered');
 console.log('');
 console.log('Cortex hooks installed! Restart Claude Code for changes to take effect.');
