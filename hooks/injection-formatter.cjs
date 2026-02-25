@@ -139,19 +139,12 @@ class InjectionFormatter {
    * @returns {string}
    */
   _formatRich(memories, context, stats) {
-    const W = 65; // Fixed box width
     const lines = [];
 
-    // Header
-    lines.push('+' + '='.repeat(W) + '+');
-    lines.push('|' + `     CORTEX v${VERSION} - Relevant Memories for This Session`.padEnd(W) + '|');
-    lines.push('+' + '='.repeat(W) + '+');
-
-    // Stats summary
-    const statsLine = '  ' + this._buildStatsLine(memories, stats);
-    lines.push('|' + statsLine.padEnd(W) + '|');
-    lines.push('+' + '='.repeat(W) + '+');
-    lines.push('');
+    // Header - clean Clack-inspired format
+    lines.push(`\u256D\u2500 Cortex v${VERSION} \u2500 Relevant Memories`);
+    lines.push(`\u2502  ${this._buildStatsLine(memories, stats)}`);
+    lines.push('\u2502');
 
     // Group memories by type
     const byType = this._groupByType(memories);
@@ -160,55 +153,39 @@ class InjectionFormatter {
       const icon = ICONS[type] || ICONS.general;
       const label = TYPE_LABELS[type] || type;
 
-      const sectionHeader = `-- ${icon} ${label.toUpperCase()} (${typeMemories.length}) `;
-      lines.push('+' + sectionHeader + '-'.repeat(W - sectionHeader.length) + '+');
-      lines.push('|' + ' '.repeat(W) + '|');
+      lines.push(`\u251C\u2500 ${icon} ${label.toUpperCase()} (${typeMemories.length})`);
 
       for (const memory of typeMemories) {
-        const formattedMemory = this._formatSingleMemory(memory, this.formatType || 'neural');
+        const formattedMemory = this._formatSingleMemory(memory, 'rich');
         for (const line of formattedMemory.split('\n')) {
-          const trimmedLine = '  ' + line;
-          // Wrap long lines
-          if (trimmedLine.length <= W) {
-            lines.push('|' + trimmedLine.padEnd(W) + '|');
-          } else {
-            lines.push('|' + trimmedLine.substring(0, W - 3) + '...|');
-          }
+          lines.push(`\u2502  ${line}`);
         }
-        lines.push('|' + ' '.repeat(W) + '|');
+        lines.push('\u2502');
       }
-
-      lines.push('+' + '-'.repeat(W) + '+');
-      lines.push('');
     }
 
     // Footer with context
     if (context.projectName || context.domains?.length || context.tags?.length) {
-      lines.push('+-- Session Context ' + '-'.repeat(W - 19) + '+');
+      lines.push('\u251C\u2500 Session Context');
 
       if (context.projectName) {
-        const projLine = `  Project: ${context.projectName} (${context.projectType || 'unknown'})`;
-        lines.push('|' + projLine.padEnd(W) + '|');
+        lines.push(`\u2502  Project: ${context.projectName} (${context.projectType || 'unknown'})`);
       }
 
       if (context.gitBranch) {
-        const gitLine = `  Git Branch: ${context.gitBranch}`;
-        lines.push('|' + gitLine.padEnd(W) + '|');
+        lines.push(`\u2502  Git Branch: ${context.gitBranch}`);
       }
 
       if (context.domains?.length) {
-        const domLine = `  Domains: ${context.domains.join(', ')}`;
-        lines.push('|' + domLine.padEnd(W) + '|');
+        lines.push(`\u2502  Domains: ${context.domains.join(', ')}`);
       }
 
       if (context.tags?.length) {
-        const tagLine = `  Tags: ${context.tags.slice(0, 8).join(', ')}`;
-        lines.push('|' + tagLine.padEnd(W) + '|');
+        lines.push(`\u2502  Tags: ${context.tags.slice(0, 8).join(', ')}`);
       }
-
-      lines.push('+' + '-'.repeat(W) + '+');
     }
 
+    lines.push('\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500');
     return lines.join('\n');
   }
 

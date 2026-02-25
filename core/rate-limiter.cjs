@@ -243,6 +243,17 @@ class RateLimiter {
   }
 
   /**
+   * Backward-compatible alias for getStats().
+   * Renamed from getStatus() in v3.0.0. Keeps stale MCP server processes
+   * (that loaded code before the rename) from crashing.
+   * @param {string} [toolName]
+   * @returns {Object}
+   */
+  getStatus(toolName) {
+    return this.getStats(toolName);
+  }
+
+  /**
    * Reset all rate limit windows
    */
   reset() {
