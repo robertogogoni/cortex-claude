@@ -1,0 +1,95 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Cortex Memory Benchmark — 2026-02-25T13-42-38
+  mcpCaller: null (Phase E direct access mode)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Query: "claude code configuration" (intent: configuration setup)
+  Total: 354 memories from 6 adapters in 1823ms
+    jsonl:long-term      100
+    episodic-memory      100
+    warp-sqlite          100
+    gemini               26
+    claudemd             23
+    knowledge-graph      5
+
+Query: "debugging errors" (intent: debugging and troubleshooting)
+  Total: 416 memories from 6 adapters in 614ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    knowledge-graph      10
+    gemini               6
+
+Query: "wayland cedilla" (intent: wayland cedilla fix)
+  Total: 418 memories from 6 adapters in 529ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    knowledge-graph      9
+    gemini               9
+
+Query: "cortex memory system" (intent: memory architecture)
+  Total: 422 memories from 7 adapters in 644ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    gemini               13
+    knowledge-graph      6
+    claudemd             3
+
+Query: "hyprland setup" (intent: desktop configuration)
+  Total: 450 memories from 7 adapters in 551ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    claudemd             25
+    gemini               21
+    knowledge-graph      4
+
+Query: "git workflow" (intent: version control patterns)
+  Total: 455 memories from 7 adapters in 556ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    claudemd             40
+    knowledge-graph      9
+    gemini               6
+
+Query: "bash script" (intent: shell scripting)
+  Total: 484 memories from 7 adapters in 574ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    claudemd             60
+    gemini               18
+    knowledge-graph      6
+
+Query: "node javascript" (intent: nodejs development)
+  Total: 436 memories from 7 adapters in 600ms
+    jsonl:long-term      100
+    vector               100
+    episodic-memory      100
+    warp-sqlite          100
+    claudemd             33
+    gemini               2
+    knowledge-graph      1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Queries run:       8
+  Avg memories/query: 429
+  Avg latency:       736ms
+  Max active adapters: 7
+
+  BEFORE Phase E: ~57 memories, ~4 adapters
+  AFTER Phase E:  ~429 memories, ~7 adapters
+  Improvement:    ~7.5x more memories
+

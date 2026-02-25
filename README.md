@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)
-[![Tests](https://img.shields.io/badge/tests-142%2F142-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-153%2F153-success.svg)](tests/)
 [![Vector Search](https://img.shields.io/badge/vector-HNSW%20%2B%20BM25-orange.svg)]()
 [![Security](https://img.shields.io/badge/security-AES--256--GCM-green.svg)]()
 [![Roadmap](https://img.shields.io/badge/roadmap-view-blueviolet.svg)](ROADMAP.md)
@@ -597,7 +597,7 @@ npm run test:lads   # 31 tests - LADS components
 npm run test:vector # 52 tests - vector search (new)
 ```
 
-**Current Status**: 142/142 tests passing
+**Current Status**: 153/153 tests passing
 
 ## Troubleshooting
 
