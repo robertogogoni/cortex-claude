@@ -141,10 +141,13 @@ class AdapterRegistry {
   async queryAll(context, options = {}) {
     const enabledAdapters = this.getEnabled();
     const stats = {};
+    const { onAdapterComplete } = options;
 
     // Query all adapters in parallel with individual timeouts
     const promises = enabledAdapters.map(async adapter => {
       const startTime = Date.now();
+      // Track cold start for vector adapter
+      const wasColdStart = adapter.name === 'vector' && !adapter._provider?.initialized;
 
       try {
         // Race between query and timeout
@@ -155,14 +158,28 @@ class AdapterRegistry {
           ),
         ]);
 
-        stats[adapter.name] = {
+        const adapterStat = {
           name: adapter.name,
           available: true,
           totalRecords: results.length,
           lastQueryTime: Date.now() - startTime,
           cacheHitRate: adapter._calculateCacheHitRate?.() || 0,
           errorCount: 0,
+          wasColdStart,
         };
+
+        stats[adapter.name] = adapterStat;
+
+        // Stream callback
+        if (onAdapterComplete) {
+          onAdapterComplete({
+            name: adapter.name,
+            totalRecords: results.length,
+            lastQueryTime: adapterStat.lastQueryTime,
+            wasColdStart,
+            error: null,
+          });
+        }
 
         return results;
       } catch (error) {
@@ -171,7 +188,7 @@ class AdapterRegistry {
           console.error(`[AdapterRegistry] ${adapter.name} failed:`, error.message);
         }
 
-        stats[adapter.name] = {
+        const adapterStat = {
           name: adapter.name,
           available: false,
           totalRecords: 0,
@@ -179,7 +196,21 @@ class AdapterRegistry {
           cacheHitRate: 0,
           errorCount: 1,
           error: error.message,
+          wasColdStart,
         };
+
+        stats[adapter.name] = adapterStat;
+
+        // Stream callback on error too
+        if (onAdapterComplete) {
+          onAdapterComplete({
+            name: adapter.name,
+            totalRecords: 0,
+            lastQueryTime: adapterStat.lastQueryTime,
+            wasColdStart,
+            error: error.message,
+          });
+        }
 
         return [];  // Return empty array to not break Promise.all
       }

@@ -23,7 +23,7 @@ const BASE_PATH = path.dirname(__dirname);
 
 // Dynamic requires with error handling
 let QueryOrchestrator, ContextAnalyzer, getConfigManager, getLADSCore, generateId, getTimestamp;
-let ProgressDisplay, InjectionFormatter;
+let InjectionFormatter, CortexRenderer;
 let WIPDetector;
 let OnboardingManager;
 
@@ -33,7 +33,8 @@ try {
   ({ getConfigManager } = require('../core/config.cjs'));
   ({ getLADSCore } = require('../core/lads/index.cjs'));
   ({ generateId, getTimestamp } = require('../core/types.cjs'));
-  ({ ProgressDisplay, InjectionFormatter } = require('./injection-formatter.cjs'));
+  ({ InjectionFormatter } = require('./injection-formatter.cjs'));
+  ({ CortexRenderer } = require('./cli-renderer.cjs'));
   ({ WIPDetector } = require('./wip-detector.cjs'));
   ({ OnboardingManager } = require('./onboarding.cjs'));
 } catch (error) {
@@ -168,6 +169,7 @@ class SessionStartHook {
       const queryResult = await this.orchestrator.query({
         prompt: initialPrompt,
         recentFiles: this._getRecentFiles(workingDir),
+        onAdapterComplete: this._onAdapterComplete,
       });
 
       // Track the query decision
@@ -368,39 +370,60 @@ async function main() {
                       process.argv.includes('--compact') ||
                       process.argv.includes('-c');
 
-  // Initialize progress display
-  const progress = new ProgressDisplay({ verbose: !compactMode });
+  const hook = new SessionStartHook();
+
+  // Initialize CortexRenderer
+  const renderer = new CortexRenderer({
+    verbosity: compactMode ? 'quiet' : 'full',
+    tokenBudget: hook.config.get('sessionStart.slots.maxTokens') || 2000,
+  });
 
   if (!compactMode) {
-    progress.init();
-    progress.step('Analyzing session context...', 'loading');
+    renderer.banner();
+    renderer.begin();
+    renderer.phaseStart('Initializing');
   }
 
-  const hook = new SessionStartHook();
+  // Wire streaming adapter results to renderer
+  if (!compactMode) {
+    hook._onAdapterComplete = (result) => {
+      if (result.error) {
+        renderer.adapterError(result);
+      } else {
+        renderer.adapterResult(result);
+      }
+    };
+  }
+
   const result = await hook.execute();
 
-  // Show summary in progress display
+  // Show summary via CortexRenderer
   if (!compactMode) {
     if (result.success && result.enabled) {
-      progress.summary(result.stats);
+      renderer.phaseDone('Initialized', result.stats?.duration);
+
+      renderer.end({
+        memoriesSelected: result.stats.memoriesSelected || result.stats.totalSelected || 0,
+        estimatedTokens: result.stats.estimatedTokens || 0,
+        duration: result.stats.duration || 0,
+        totalQueried: result.stats.memoriesQueried || result.stats.totalQueried || 0,
+        bySource: result.stats.bySource,
+        hydeExpanded: result.stats.semantic?.hydeExpanded || false,
+        hydeMs: result.stats.semantic?.hydeMs || 0,
+      });
     } else if (!result.enabled) {
-      progress.step('Cortex disabled in config', 'warning');
+      renderer.phaseDone('Cortex disabled in config', 0);
     } else {
-      progress.error(result.error || 'Unknown error');
+      renderer.phaseDone('Error: ' + (result.error || 'Unknown'), 0);
     }
   } else {
-    // Compact mode: single line output
-    const stats = result.stats || {};
-    const selected = stats.memoriesSelected || 0;
-    const tokens = stats.estimatedTokens || 0;
-    const wipItems = result.wipItems || 0;
-
-    if (wipItems > 0) {
-      process.stderr.write(`✓ Cortex: ${selected} memories + ${wipItems} WIP items\n`);
-    } else if (selected > 0) {
-      process.stderr.write(`✓ Cortex: ${selected} memories (${tokens} tokens)\n`);
+    if (result.success && result.enabled) {
+      renderer.quiet({
+        memoriesSelected: result.stats?.memoriesSelected || result.stats?.totalSelected || 0,
+        estimatedTokens: result.stats?.estimatedTokens || 0,
+      });
     } else {
-      process.stderr.write(`✓ Cortex: Ready\n`);
+      renderer.quiet({ memoriesSelected: 0, estimatedTokens: 0 });
     }
   }
 

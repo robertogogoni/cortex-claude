@@ -1,37 +1,23 @@
 #!/usr/bin/env node
 /**
- * Cortex - Claude's Cognitive Layer - UX Formatter
+ * Cortex - Claude's Cognitive Layer - Injection Formatter
  *
- * Neural-inspired visual output for Claude sessions with:
- * - 4 rotating themes (nodes, branches, waves, minimal)
- * - Pulsing animations during loading
- * - Color-matched palettes
+ * Formats memories for injection into Claude context.
+ * Supports: rich, compact, xml, markdown formats.
  *
- * @version 2.1.0
+ * CLI output (progress display, banners, spinners) is handled by
+ * cli-renderer.cjs — this module only formats injection text.
+ *
+ * @version 3.0.0
  */
 
 'use strict';
-
-// Import neural visuals system
-let NeuralProgressDisplay, NeuralFormatter, NeuralAnimator, ThemeManager;
-try {
-  ({
-    NeuralProgressDisplay,
-    NeuralFormatter,
-    NeuralAnimator,
-    ThemeManager,
-  } = require('./neural-visuals.cjs'));
-} catch (e) {
-  // Neural visuals not available, will use fallback
-  NeuralProgressDisplay = null;
-  NeuralFormatter = null;
-}
 
 // =============================================================================
 // CORTEX VISUAL IDENTITY
 // =============================================================================
 
-const VERSION = '2.1.0';
+const VERSION = '3.0.0';
 
 // Minimal markers - no emojis, clean text
 const MARKERS = {
@@ -81,151 +67,6 @@ const SOURCE_LABELS = {
 };
 
 // =============================================================================
-// PROGRESS DISPLAY (stderr)
-// =============================================================================
-
-/**
- * Rich progress display for session start
- * Supports both minimal ASCII and neural animated modes
- */
-class ProgressDisplay {
-  constructor(options = {}) {
-    this.verbose = options.verbose || false;
-    this.startTime = Date.now();
-    this.steps = [];
-    this.useNeural = options.neural !== false && NeuralProgressDisplay;
-    this.theme = options.theme || null;
-
-    // If neural mode available, create neural display
-    if (this.useNeural) {
-      this.neuralDisplay = new NeuralProgressDisplay({
-        theme: this.theme,
-        verbose: this.verbose,
-      });
-    }
-  }
-
-  /**
-   * Show initialization message
-   */
-  init() {
-    if (this.useNeural && this.neuralDisplay) {
-      this.neuralDisplay.showHeader();
-      return;
-    }
-
-    // Fallback minimal style
-    this._write('\n');
-    this._write('  cortex v2.1.0\n');
-    this._write('  -------------\n');
-  }
-
-  /**
-   * Start loading animation (neural mode only)
-   */
-  startLoading() {
-    if (this.useNeural && this.neuralDisplay) {
-      this.neuralDisplay.startLoading();
-    }
-  }
-
-  /**
-   * Stop loading animation (neural mode only)
-   */
-  stopLoading() {
-    if (this.useNeural && this.neuralDisplay) {
-      this.neuralDisplay.stopLoading();
-    }
-  }
-
-  /**
-   * Show step progress
-   * @param {string} step
-   * @param {string} status
-   */
-  step(step, status = 'loading') {
-    const icon = ICONS[status] || ICONS.loading;
-    this._write(`  ${icon} ${step}\n`);
-    this.steps.push({ step, status, time: Date.now() });
-  }
-
-  /**
-   * Show source query progress
-   * @param {string} source
-   * @param {number} found
-   * @param {number} duration
-   */
-  sourceResult(source, found, duration) {
-    const icon = ICONS[source.split(':')[0]] || ICONS.unknown;
-    const label = SOURCE_LABELS[source] || source;
-    const countStr = found > 0 ? `${found} found` : 'none';
-    this._write(`    ${icon} ${label}: ${countStr} (${duration}ms)\n`);
-  }
-
-  /**
-   * Show final summary
-   * @param {Object} stats
-   */
-  summary(stats) {
-    // Use neural display if available
-    if (this.useNeural && this.neuralDisplay) {
-      this.neuralDisplay.showSummary(stats);
-      return;
-    }
-
-    // Fallback minimal style
-    const duration = Date.now() - this.startTime;
-    const selected = stats.memoriesSelected || 0;
-    const tokens = stats.estimatedTokens || 0;
-
-    this._write('\n');
-
-    if (selected > 0) {
-      this._write(`  loaded: ${selected} memories, ${tokens} tokens\n`);
-
-      // Show breakdown by source
-      if (stats.bySource && Object.keys(stats.bySource).length > 0) {
-        const sources = Object.entries(stats.bySource)
-          .filter(([, count]) => count > 0)
-          .map(([source, count]) => `${SOURCE_LABELS[source] || source}:${count}`)
-          .join(' | ');
-        this._write(`  sources: ${sources}\n`);
-      }
-
-      // Show breakdown by type
-      if (stats.byType && Object.keys(stats.byType).length > 0) {
-        const types = Object.entries(stats.byType)
-          .filter(([, count]) => count > 0)
-          .map(([type, count]) => `${type}:${count}`)
-          .join(' | ');
-        this._write(`  types: ${types}\n`);
-      }
-    } else {
-      this._write('  ready (no relevant memories)\n');
-    }
-
-    this._write(`  time: ${duration}ms\n`);
-    this._write('\n');
-  }
-
-  /**
-   * Show error
-   * @param {string} message
-   */
-  error(message) {
-    this._write(`\n  error: ${message}\n\n`);
-  }
-
-  /**
-   * Write to stderr
-   * @param {string} text
-   */
-  _write(text) {
-    process.stderr.write(text);
-  }
-}
-
-// =============================================================================
 // INJECTION FORMATTER
 // =============================================================================
 
@@ -235,24 +76,14 @@ class ProgressDisplay {
 class InjectionFormatter {
   /**
    * @param {Object} options
-   * @param {string} options.format - 'neural', 'rich', 'compact', 'xml', 'markdown'
-   * @param {string} options.theme - Neural theme name (nodes, branches, waves, minimal)
+   * @param {string} options.format - 'rich', 'compact', 'xml', 'markdown' (neural falls through to rich)
    * @param {boolean} options.includeSourceInfo - Include source attribution
    * @param {boolean} options.includeRelevance - Include relevance scores
    */
   constructor(options = {}) {
-    this.formatType = options.format || 'neural';
-    this.theme = options.theme || null;
+    this.formatType = options.format || 'rich';
     this.includeSourceInfo = options.includeSourceInfo !== false;
     this.includeRelevance = options.includeRelevance !== false;
-
-    // Create neural formatter if available and requested
-    if (this.formatType === 'neural' && NeuralFormatter) {
-      this.neuralFormatter = new NeuralFormatter({
-        theme: this.theme,
-        includeColors: true,
-      });
-    }
   }
 
   /**
@@ -268,11 +99,7 @@ class InjectionFormatter {
     }
 
     switch (this.formatType) {
-      case 'neural':
-        if (this.neuralFormatter) {
-          return this.neuralFormatter.formatMemories(memories, context, stats);
-        }
-        // Fall through to rich if neural not available
+      case 'neural':  // Falls through to 'rich' (backward compatible)
       case 'rich':
         return this._formatRich(memories, context, stats);
       case 'compact':
@@ -670,17 +497,11 @@ class InjectionFormatter {
 
 module.exports = {
   // Core classes
-  ProgressDisplay,
   InjectionFormatter,
 
-  // Neural visuals (re-exported for convenience)
-  NeuralProgressDisplay,
-  NeuralFormatter,
-  NeuralAnimator,
-  ThemeManager,
-
   // Constants
-  ICONS,
+  ICONS: MARKERS,
+  MARKERS,
   TYPE_LABELS,
   SOURCE_LABELS,
   VERSION,

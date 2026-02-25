@@ -38,7 +38,7 @@ async function main() {
   // Import our workers
   const { HaikuWorker } = require('./haiku-worker.cjs');
   const { SonnetThinker } = require('./sonnet-thinker.cjs');
-  const { NeuralProgressDisplay } = require('../hooks/neural-visuals.cjs');
+  const { InjectionFormatter } = require('../hooks/injection-formatter.cjs');
   const { CortexError, fromAPIError, fromMemoryError } = require('../core/errors.cjs');
 
   // Import validation (security hardening)
@@ -61,7 +61,7 @@ async function main() {
   // Initialize workers
   const haiku = new HaikuWorker();
   const sonnet = new SonnetThinker();
-  const progress = new NeuralProgressDisplay({ verbose: false });
+  const mcpFormatter = new InjectionFormatter({ format: 'rich' });
 
   // Initialize rate limiter (prevents runaway API costs)
   const rateLimiter = new RateLimiter({
@@ -97,7 +97,7 @@ async function main() {
   const server = new Server(
     {
       name: 'cortex',
-      version: '2.0.0',
+      version: '3.0.0',
       description: "Claude's Cognitive Layer - Intelligent memory with dual-model architecture"
     },
     {
@@ -291,7 +291,7 @@ async function main() {
     const status = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: '2.0.0',
+      version: '3.0.0',
       uptime: process.uptime(),
       memory: {
         heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
@@ -299,7 +299,7 @@ async function main() {
         external: Math.round(process.memoryUsage().external / 1024 / 1024),
         unit: 'MB',
       },
-      rateLimits: rateLimiter.getStatus(),
+      rateLimits: rateLimiter.getStats(),
       auditLog: {
         enabled: auditLogger.isEnabled(),
         sessionCalls: auditLogger.getSessionStats()?.totalCalls || 0,
@@ -934,15 +934,14 @@ This provides a comprehensive project briefing.`
         throw validationError;
       }
 
-      // Neural formatter for MCP tool responses (plain text, no ANSI)
-      const { NeuralFormatter } = require('../hooks/neural-visuals.cjs');
-      const neuralFormatter = new NeuralFormatter({ includeColors: false });
+      // Formatter for MCP tool responses (plain text, no ANSI)
+      const toolFormatter = new InjectionFormatter({ format: 'rich' });
 
       switch (name) {
         // Haiku-powered tools
         case 'cortex__query': {
           const queryResult = await haiku.query(validatedArgs.query, validatedArgs.sources, validatedArgs.limit);
-          const formatted = neuralFormatter.formatForMCP(
+          const formatted = toolFormatter.formatMemories(
             queryResult.memories || [],
             { projectName: queryResult.query },
             queryResult.stats || {}
@@ -953,7 +952,7 @@ This provides a comprehensive project briefing.`
 
         case 'cortex__recall': {
           const recallResult = await haiku.recall(validatedArgs.context, validatedArgs.type);
-          const formatted = neuralFormatter.formatForMCP(
+          const formatted = toolFormatter.formatMemories(
             recallResult.memories || [],
             { projectName: recallResult.context },
             recallResult.stats || {}

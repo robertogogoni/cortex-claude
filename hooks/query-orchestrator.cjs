@@ -134,7 +134,7 @@ class QueryOrchestrator {
       // Query all enabled adapters in parallel
       const { results: allMemories, stats: adapterStats } = await this.registry.queryAll(
         context,
-        queryOptions
+        { ...queryOptions, onAdapterComplete: input.onAdapterComplete }
       );
 
       // Deduplicate memories (same content may come from multiple sources)

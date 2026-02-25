@@ -15,7 +15,8 @@ const { SessionEndHook } = require('./session-end.cjs');
 const { ContextAnalyzer, INTENT_PATTERNS, FILE_DOMAINS } = require('./context-analyzer.cjs');
 const { QueryOrchestrator, MEMORY_SOURCES } = require('./query-orchestrator.cjs');
 const { ExtractionEngine, EXTRACTION_PATTERNS, QUALITY_SIGNALS } = require('./extraction-engine.cjs');
-const { ProgressDisplay, InjectionFormatter, ICONS, TYPE_LABELS, SOURCE_LABELS } = require('./injection-formatter.cjs');
+const { InjectionFormatter, ICONS, TYPE_LABELS, SOURCE_LABELS } = require('./injection-formatter.cjs');
+const { CortexRenderer } = require('./cli-renderer.cjs');
 
 // =============================================================================
 // HOOK RUNNER
@@ -75,8 +76,8 @@ module.exports = {
   EXTRACTION_PATTERNS,
   QUALITY_SIGNALS,
 
-  // UX Display
-  ProgressDisplay,
+  // UX Display & Formatting
+  CortexRenderer,
   InjectionFormatter,
   ICONS,
   TYPE_LABELS,

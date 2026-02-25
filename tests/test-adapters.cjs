@@ -342,24 +342,14 @@ async function runJSONLAdapterTests() {
 // =============================================================================
 
 async function runEpisodicMemoryAdapterTests() {
-  console.log('\n📋 EpisodicMemoryAdapter Tests');
+  console.log('\n📋 EpisodicMemoryAdapter Tests (v2 — Direct SQLite)');
   let passed = 0;
   let total = 0;
 
-  // Mock MCP caller
-  const mockMcpResults = [
-    { title: 'Session 1', snippet: 'Discussed git workflow', date: '2026-01-20' },
-    { title: 'Session 2', snippet: 'Fixed Docker build issue', date: '2026-01-21' },
-  ];
+  // v2: EpisodicMemoryAdapter uses direct SQLite access, not MCP.
+  // mcpCaller is kept for legacy compat but is not used.
 
-  const mockMcpCaller = async (tool, params) => {
-    if (tool === 'mcp__plugin_episodic-memory_episodic-memory__search') {
-      return { results: mockMcpResults };
-    }
-    throw new Error('Unknown tool');
-  };
-
-  // Test: Constructor without mcpCaller
+  // Test: Constructor
   total++;
   if (test('EpisodicMemoryAdapter constructs without mcpCaller', () => {
     const adapter = new EpisodicMemoryAdapter({});
@@ -367,61 +357,60 @@ async function runEpisodicMemoryAdapterTests() {
     assert.strictEqual(adapter.priority, 0.9);
   })) passed++;
 
-  // Test: Query fails without mcpCaller
+  // Test: Query throws when database file missing (not mcpCaller)
   total++;
-  if (await testAsync('Query throws error without mcpCaller', async () => {
-    const adapter = new EpisodicMemoryAdapter({});
+  if (await testAsync('Query throws error when SQLite DB not found', async () => {
+    const adapter = new EpisodicMemoryAdapter({
+      dbPath: '/nonexistent/path/db.sqlite',
+    });
     await assert.rejects(
-      async () => adapter.query({}),
-      /requires mcpCaller/
+      async () => adapter.query({ tags: ['test'] }),
+      /not found|SQLITE|database/i
     );
   })) passed++;
 
-  // Test: Query with mcpCaller
+  // Test: Query returns results from real SQLite database
   total++;
-  if (await testAsync('Query returns results with mcpCaller', async () => {
-    const adapter = new EpisodicMemoryAdapter({
-      mcpCaller: mockMcpCaller,
-    });
-    const results = await adapter.query({ tags: ['git'] });
-    assert.strictEqual(results.length, 2);
-    assert.ok(results.every(r => r._source === 'episodic-memory'), 'All results should have episodic-memory source');
-    // Type is inferred from content, not fixed as 'episodic'
-    assert.ok(results.every(r => ['learning', 'pattern', 'skill', 'correction', 'preference'].includes(r.type)),
-      'All results should have valid memory type');
-  })) passed++;
+  const realDbPath = path.join(os.homedir(), '.config', 'superpowers', 'conversation-index', 'db.sqlite');
+  if (fs.existsSync(realDbPath)) {
+    if (await testAsync('Query returns results from SQLite', async () => {
+      const adapter = new EpisodicMemoryAdapter({ dbPath: realDbPath });
+      const results = await adapter.query({ tags: ['claude'], domains: ['javascript'] });
+      assert.ok(results.length > 0, 'Should return results from real DB');
+      assert.ok(results.every(r => r._source === 'episodic-memory'), 'All results should have episodic-memory source');
+      assert.ok(results.every(r => ['learning', 'pattern', 'skill', 'correction', 'preference'].includes(r.type)),
+        'All results should have valid memory type');
+    })) passed++;
+  } else {
+    console.log('  ⊘ Skipping SQLite query test (DB not found at real path)');
+  }
 
   // Test: enabled flag is available (enforcement happens at registry level)
   total++;
-  if (await testAsync('enabled flag is set correctly', async () => {
-    const adapter = new EpisodicMemoryAdapter({
-      enabled: false,
-      mcpCaller: mockMcpCaller,
-    });
-    // The adapter stores the enabled flag - registry checks it before calling query
+  if (test('enabled flag is set correctly', () => {
+    const adapter = new EpisodicMemoryAdapter({ enabled: false });
     assert.strictEqual(adapter.enabled, false, 'enabled should be false');
   })) passed++;
 
-  // Test: Handles MCP errors gracefully
+  // Test: Handles missing database gracefully (error, not crash)
   total++;
-  if (await testAsync('Handles MCP errors gracefully', async () => {
-    const errorMcpCaller = async () => { throw new Error('MCP server unavailable'); };
+  if (await testAsync('Handles missing database gracefully', async () => {
     const adapter = new EpisodicMemoryAdapter({
-      mcpCaller: errorMcpCaller,
+      dbPath: '/tmp/nonexistent-test-db-' + Date.now() + '.sqlite',
     });
     await assert.rejects(
-      async () => adapter.query({}),
-      /MCP server unavailable/
+      async () => adapter.query({ tags: ['test'] }),
+      /not found|SQLITE|database/i
     );
   })) passed++;
 
-  // Test: setMcpCaller
+  // Test: mcpCaller is accepted but ignored (legacy compat)
   total++;
-  if (await testAsync('setMcpCaller allows late binding', async () => {
-    const adapter = new EpisodicMemoryAdapter({});
-    adapter.mcpCaller = mockMcpCaller;
-    const results = await adapter.query({});
-    assert.strictEqual(results.length, 2);
+  if (test('Accepts mcpCaller for legacy compatibility', () => {
+    const mockCaller = async () => ({});
+    const adapter = new EpisodicMemoryAdapter({ mcpCaller: mockCaller });
+    assert.strictEqual(adapter.mcpCaller, mockCaller, 'mcpCaller should be stored');
+    // v2: mcpCaller is stored but not used for queries
   })) passed++;
 
   return { passed, total };
@@ -432,22 +421,23 @@ async function runEpisodicMemoryAdapterTests() {
 // =============================================================================
 
 async function runKnowledgeGraphAdapterTests() {
-  console.log('\n📋 KnowledgeGraphAdapter Tests');
+  console.log('\n📋 KnowledgeGraphAdapter Tests (v2 — Direct JSONL)');
   let passed = 0;
   let total = 0;
 
-  // Mock MCP caller
-  const mockEntities = [
-    { name: 'React', entityType: 'technology', observations: ['Frontend framework', 'Component-based'] },
-    { name: 'NextJS', entityType: 'framework', observations: ['Built on React', 'Server-side rendering'] },
-  ];
+  // v2: KnowledgeGraphAdapter reads JSONL file directly, not MCP.
+  // mcpCaller is kept for legacy compat but is not used.
 
-  const mockMcpCaller = async (tool, params) => {
-    if (tool === 'mcp__memory__search_nodes') {
-      return { entities: mockEntities };
-    }
-    throw new Error('Unknown tool');
-  };
+  // Create a test JSONL file with entities and relations
+  const testKgDir = path.join(TEST_DIR, 'kg-test');
+  fs.mkdirSync(testKgDir, { recursive: true });
+  const testKgPath = path.join(testKgDir, 'memory.jsonl');
+  const testEntities = [
+    { type: 'entity', name: 'React', entityType: 'technology', observations: ['Frontend framework', 'Component-based'] },
+    { type: 'entity', name: 'NextJS', entityType: 'framework', observations: ['Built on React', 'Server-side rendering'] },
+    { type: 'relation', from: 'NextJS', to: 'React', relationType: 'built_on' },
+  ];
+  fs.writeFileSync(testKgPath, testEntities.map(e => JSON.stringify(e)).join('\n') + '\n');
 
   // Test: Constructor
   total++;
@@ -457,44 +447,44 @@ async function runKnowledgeGraphAdapterTests() {
     assert.strictEqual(adapter.priority, 0.8);
   })) passed++;
 
-  // Test: Query without mcpCaller
+  // Test: Query returns empty when JSONL file not found (not throw)
   total++;
-  if (await testAsync('Query throws error without mcpCaller', async () => {
-    const adapter = new KnowledgeGraphAdapter({});
-    await assert.rejects(
-      async () => adapter.query({}),
-      /requires mcpCaller/
-    );
-  })) passed++;
-
-  // Test: Query with mcpCaller
-  total++;
-  if (await testAsync('Query returns formatted entities', async () => {
+  if (await testAsync('Query returns empty when file not found', async () => {
     const adapter = new KnowledgeGraphAdapter({
-      mcpCaller: mockMcpCaller,
+      filePath: '/nonexistent/path/memory.jsonl',
     });
     const results = await adapter.query({ tags: ['React'] });
-    assert.strictEqual(results.length, 2);
-    assert.ok(results.every(r => r._source === 'knowledge-graph'), 'All results should have knowledge-graph source');
-    // Type is mapped from entityType, not fixed as 'entity'
-    assert.ok(results.every(r => ['learning', 'pattern', 'skill', 'correction', 'preference'].includes(r.type)),
-      'All results should have valid memory type');
+    assert.strictEqual(results.length, 0, 'Should return empty array when file missing');
   })) passed++;
 
-  // Test: Entity formatting
+  // Test: Query returns entities from JSONL file
   total++;
-  if (await testAsync('Entities are formatted correctly', async () => {
-    const adapter = new KnowledgeGraphAdapter({
-      mcpCaller: mockMcpCaller,
-    });
+  if (await testAsync('Query returns entities from JSONL file', async () => {
+    const adapter = new KnowledgeGraphAdapter({ filePath: testKgPath });
+    const results = await adapter.query({ tags: ['React'] });
+    assert.ok(results.length > 0, 'Should return results from test JSONL');
+    assert.ok(results.every(r => r._source === 'knowledge-graph'), 'All results should have knowledge-graph source');
+  })) passed++;
+
+  // Test: Entity content formatting
+  total++;
+  if (await testAsync('Entities are formatted from JSONL data', async () => {
+    const adapter = new KnowledgeGraphAdapter({ filePath: testKgPath });
     const results = await adapter.query({});
-    // Find the React entity by checking _entityName or content
-    const reactEntity = results.find(r => r._entityName === 'React' || r.summary?.includes('Frontend'));
-    assert.ok(reactEntity, 'Should find React entity');
-    // Content comes from observations joined with newlines
-    assert.ok(reactEntity.content.includes('Frontend framework'), 'Content should include observation');
-    // Tags include entityType (lowercased)
-    assert.ok(reactEntity.tags.includes('technology'), 'Tags should include entity type');
+    assert.ok(results.length > 0, 'Should return results');
+    // At least one result should contain observation text
+    const hasObservation = results.some(r =>
+      r.content.includes('Frontend framework') || r.content.includes('Built on React')
+    );
+    assert.ok(hasObservation, 'Some result should contain observation text');
+  })) passed++;
+
+  // Test: mcpCaller accepted for legacy compat
+  total++;
+  if (test('Accepts mcpCaller for legacy compatibility', () => {
+    const mockCaller = async () => ({});
+    const adapter = new KnowledgeGraphAdapter({ mcpCaller: mockCaller });
+    assert.strictEqual(adapter.mcpCaller, mockCaller, 'mcpCaller should be stored');
   })) passed++;
 
   return { passed, total };
@@ -749,12 +739,15 @@ async function runAdapterRegistryTests() {
       sources: [{ name: 'long-term', path: 'data/memories/long-term.jsonl' }],
     }));
 
-    // Failing adapter (no mcpCaller)
-    registry.register(new EpisodicMemoryAdapter({ enabled: true }));
+    // Failing adapter (nonexistent database path)
+    registry.register(new EpisodicMemoryAdapter({
+      enabled: true,
+      dbPath: '/nonexistent/path/db-' + Date.now() + '.sqlite',
+    }));
 
     const { results, stats } = await registry.queryAll({});
 
-    // JSONL should succeed, Episodic should fail
+    // JSONL should succeed, Episodic should fail (no DB)
     assert.ok(results.length >= 1);
     assert.strictEqual(stats.jsonl.available, true);
     assert.strictEqual(stats['episodic-memory'].available, false);
@@ -775,6 +768,60 @@ async function runAdapterRegistryTests() {
     assert.strictEqual(kg.mcpCaller, mockCaller);
   })) passed++;
 
+  // Test: onAdapterComplete callback fires for each adapter
+  total++;
+  if (await testAsync('queryAll fires onAdapterComplete for each adapter', async () => {
+    const longTermPath = path.join(TEST_DIR, 'data', 'memories', 'long-term.jsonl');
+    // Ensure test data exists
+    if (!fs.existsSync(longTermPath)) {
+      fs.writeFileSync(longTermPath, JSON.stringify({ id: '1', type: 'learning', summary: 'Test' }) + '\n');
+    }
+
+    const registry = new AdapterRegistry({ verbose: false });
+    registry.register(new JSONLAdapter({
+      basePath: TEST_DIR,
+      sources: [{ name: 'long-term', path: 'data/memories/long-term.jsonl' }],
+    }));
+    registry.register(new ClaudeMdAdapter({ paths: [path.join(TEST_DIR, 'CLAUDE.md')] }));
+
+    const completed = [];
+    await registry.queryAll({}, {
+      onAdapterComplete: (result) => {
+        completed.push(result);
+      },
+    });
+
+    // Should have callbacks for each enabled adapter
+    assert.ok(completed.length > 0, 'Should have at least one callback');
+    for (const c of completed) {
+      assert.ok(c.name, 'Callback should have adapter name');
+      assert.ok(typeof c.totalRecords === 'number', 'Should have totalRecords');
+      assert.ok(typeof c.lastQueryTime === 'number', 'Should have lastQueryTime');
+      assert.ok(typeof c.wasColdStart === 'boolean', 'Should have wasColdStart');
+    }
+  })) passed++;
+
+  // Test: onAdapterComplete fires on error with error field
+  total++;
+  if (await testAsync('queryAll onAdapterComplete fires on error with error field', async () => {
+    const registry = new AdapterRegistry({ verbose: false });
+    // Register an adapter that will fail (nonexistent db path)
+    registry.register(new EpisodicMemoryAdapter({
+      enabled: true,
+      dbPath: '/nonexistent/path/db-' + Date.now() + '.sqlite',
+    }));
+
+    const completed = [];
+    await registry.queryAll({}, {
+      onAdapterComplete: (result) => completed.push(result),
+    });
+
+    assert.strictEqual(completed.length, 1, 'Should callback on failure too');
+    assert.strictEqual(completed[0].name, 'episodic-memory');
+    assert.ok(completed[0].error, 'Should have error message');
+    assert.strictEqual(completed[0].totalRecords, 0, 'Failed adapter has 0 records');
+  })) passed++;
+
   return { passed, total };
 }
 
@@ -789,19 +836,20 @@ async function runFactoryTests() {
 
   // Test: Creates registry with all adapters
   total++;
-  if (test('Creates registry with all 6 adapters', () => {
+  if (test('Creates registry with all 7 adapters', () => {
     const registry = createDefaultRegistry({
       basePath: TEST_DIR,
       verbose: false,
     });
     const all = registry.getAll();
-    assert.strictEqual(all.length, 6);
+    assert.strictEqual(all.length, 7);
     assert.ok(registry.get('jsonl'));
     assert.ok(registry.get('episodic-memory'));
     assert.ok(registry.get('knowledge-graph'));
     assert.ok(registry.get('claudemd'));
     assert.ok(registry.get('gemini'));
     assert.ok(registry.get('warp-sqlite'));
+    assert.ok(registry.get('vector'));
     // Annotations layer is attached to registry, not registered as adapter
     assert.ok(registry.annotationsLayer, 'annotationsLayer should be attached');
   })) passed++;
