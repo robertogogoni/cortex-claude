@@ -14,6 +14,7 @@
 
 const { TierPromotion } = require('./tier-promotion.cjs');
 const { expandPath } = require('./types.cjs');
+const { calculateDecay } = require('./confidence-decay.cjs');
 
 // =============================================================================
 // CONSTANTS
@@ -195,13 +196,8 @@ class MemoryScheduler {
         const memories = store.getAll().filter(m => m && m.status !== 'deleted');
 
         for (const memory of memories) {
-          const age = now - new Date(memory.createdAt || memory.sourceTimestamp).getTime();
-          const daysSinceCreation = age / (24 * 60 * 60 * 1000);
-
-          // Decay formula: score = e^(-lambda * days) where lambda controls decay rate
-          // Lambda = 0.05 means ~5% decay per day
-          const lambda = tierName === 'working' ? 0.1 : tierName === 'shortTerm' ? 0.05 : 0.01;
-          const newDecayScore = Math.exp(-lambda * daysSinceCreation);
+          // Use type-specific half-life decay from confidence-decay module
+          const newDecayScore = calculateDecay(memory);
 
           // Only update if decay has changed significantly
           if (Math.abs((memory.decayScore || 1) - newDecayScore) > 0.01) {

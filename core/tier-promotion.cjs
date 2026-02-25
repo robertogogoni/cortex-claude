@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { expandPath, getTimestamp, generateId } = require('./types.cjs');
 const { JSONLStore } = require('./storage.cjs');
+const { calculateDecay } = require('./confidence-decay.cjs');
 
 // =============================================================================
 // CONSTANTS
@@ -143,12 +144,15 @@ class TierPromotion {
     // Normalize usage count (cap at 10 for scoring purposes)
     const normalizedUsageCount = Math.min(record.usageCount || 0, 10) / 10;
 
+    // Calculate decay dynamically based on type-specific half-lives
+    const decayScore = calculateDecay(record);
+
     // Calculate weighted score
     const score =
       (record.extractionConfidence || 0.5) * QUALITY_WEIGHTS.extractionConfidence +
       normalizedUsageCount * QUALITY_WEIGHTS.usageCount +
       (record.usageSuccessRate || 0.5) * QUALITY_WEIGHTS.usageSuccessRate +
-      (record.decayScore || 1) * QUALITY_WEIGHTS.decayScore;
+      decayScore * QUALITY_WEIGHTS.decayScore;
 
     return Math.max(0, Math.min(1, score));
   }
