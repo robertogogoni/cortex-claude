@@ -1,0 +1,25 @@
+{
+  "name": "cortex",
+  "version": "3.0.0",
+  "description": "Claude's Cognitive Layer - Zero-cost dual-model memory with MCP Sampling, HyDE search, write gates, and bi-temporal knowledge",
+  "author": {
+    "name": "Roberto Gogoni"
+  },
+  "homepage": "https://github.com/robertogogoni/cortex-claude",
+  "repository": "https://github.com/robertogogoni/cortex-claude",
+  "license": "MIT",
+  "keywords": ["memory", "cortex", "cross-session", "mcp-sampling", "hyde", "knowledge-graph", "dual-model"],
+  "mcpServers": {
+    "cortex": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/cortex/server.cjs"],
+      "env": {}
+    }
+  },
+  "hooks": {
+    "SessionStart": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-start.cjs" }] }],
+    "SessionEnd": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/session-end.cjs" }] }],
+    "PreCompact": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.cjs" }] }],
+    "Stop": [{ "matcher": "*", "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/stop-hook.cjs" }] }]
+  }
+}

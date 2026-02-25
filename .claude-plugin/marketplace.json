@@ -1,0 +1,15 @@
+{
+  "name": "cortex-claude",
+  "owner": {
+    "name": "Roberto Gogoni",
+    "email": "robertogogoni@outlook.com"
+  },
+  "plugins": [
+    {
+      "name": "cortex",
+      "source": "./",
+      "version": "3.0.0",
+      "description": "Claude's Cognitive Layer - Zero-cost dual-model memory with MCP Sampling, HyDE search, write gates, and bi-temporal knowledge"
+    }
+  ]
+}
