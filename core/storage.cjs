@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { generateId, getTimestamp, expandPath, ERROR_CODES } = require('./types.cjs');
+const { generateId, getTimestamp, expandPath, ERROR_CODES, createBitemporalFields } = require('./types.cjs');
 
 // =============================================================================
 // JSONL STORE
@@ -152,12 +152,21 @@ class JSONLStore {
       throw new Error('Store not loaded. Call load() first.');
     }
 
+    // Generate bi-temporal fields if not already present
+    const bitemporal = (!record.validFrom && !record.ingestedAt)
+      ? createBitemporalFields(null)
+      : {};
+
     // Ensure record has required fields
     const enrichedRecord = {
       ...record,
       id: record.id || generateId(),
       createdAt: record.createdAt || getTimestamp(),
       updatedAt: getTimestamp(),
+      // Bi-temporal: preserve existing or use defaults
+      validFrom: record.validFrom || bitemporal.validFrom || getTimestamp(),
+      validTo: record.validTo !== undefined ? record.validTo : (bitemporal.validTo !== undefined ? bitemporal.validTo : null),
+      ingestedAt: record.ingestedAt || bitemporal.ingestedAt || getTimestamp(),
     };
 
     const line = JSON.stringify(enrichedRecord) + '\n';

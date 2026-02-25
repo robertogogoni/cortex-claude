@@ -39,6 +39,9 @@
  * @property {MemoryStatus} status
  * @property {string} createdAt
  * @property {string} updatedAt
+ * @property {string} validFrom - When this fact became true in the real world (ISO 8601)
+ * @property {string|null} validTo - When this fact stopped being true (null = still valid)
+ * @property {string} ingestedAt - When this record was ingested into the system (ISO 8601, immutable)
  */
 
 // =============================================================================
@@ -267,12 +270,68 @@ const DEFAULT_CONFIG = {
  */
 
 // =============================================================================
+// BI-TEMPORAL HELPERS
+// =============================================================================
+
+/**
+ * Create bi-temporal fields for a new memory record.
+ *
+ * Bi-temporal memory tracks two time dimensions:
+ * - validFrom/validTo: when a fact is true in the real world
+ * - ingestedAt: when it was stored in the system (never changes)
+ *
+ * @param {string} [validFrom] - When this fact became true (defaults to now, ISO 8601)
+ * @returns {{ validFrom: string, validTo: string|null, ingestedAt: string }}
+ */
+function createBitemporalFields(validFrom = null) {
+  const now = getTimestamp();
+  return {
+    validFrom: validFrom || now,
+    validTo: null,           // null means "still valid"
+    ingestedAt: now,         // when it was stored (never changes)
+  };
+}
+
+/**
+ * Mark a memory as no longer valid (set validTo to now).
+ *
+ * @param {Object} memory - Memory to invalidate
+ * @returns {Object} Shallow copy of memory with validTo set to now
+ */
+function invalidateMemory(memory) {
+  return { ...memory, validTo: getTimestamp() };
+}
+
+/**
+ * Check if a memory is currently valid.
+ *
+ * A memory is valid if validTo is null (open-ended) or in the future.
+ *
+ * @param {Object} memory - Memory to check
+ * @returns {boolean} True if validTo is null or in the future
+ */
+function isMemoryValid(memory) {
+  if (!memory.validTo) return true;
+  return new Date(memory.validTo) > new Date();
+}
+
+// Internal helper used by exported functions
+function getTimestamp() {
+  return new Date().toISOString();
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
 module.exports = {
   ERROR_CODES,
   DEFAULT_CONFIG,
+
+  // Bi-temporal helpers
+  createBitemporalFields,
+  invalidateMemory,
+  isMemoryValid,
 
   // Helper functions
   generateId: () => {
@@ -285,7 +344,7 @@ module.exports = {
     return `session-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
   },
 
-  getTimestamp: () => new Date().toISOString(),
+  getTimestamp,
 
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
 
