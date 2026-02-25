@@ -150,6 +150,76 @@ function printStatus(label, status, details = '') {
 // =============================================================================
 
 /**
+ * Verify critical native dependencies are installed and functional
+ * @param {Object} options
+ * @returns {Object} Result with checked/passed counts
+ */
+function verifyDependencies(options) {
+  log('\n🔍 Verifying dependencies...', options.verbose, true);
+
+  const result = { checked: 0, passed: 0, failed: [], warnings: [] };
+
+  // Check 1: better-sqlite3 (required for warp-sqlite, episodic-memory adapters)
+  result.checked++;
+  try {
+    const Database = require('better-sqlite3');
+    // Verify it actually works by creating an in-memory DB
+    const db = new Database(':memory:');
+    db.exec('CREATE TABLE test (id INTEGER PRIMARY KEY)');
+    db.close();
+    result.passed++;
+    printStatus('better-sqlite3', 'ok', '(native module loaded, in-memory test passed)');
+  } catch (e) {
+    result.failed.push({ name: 'better-sqlite3', error: e.message });
+    printStatus('better-sqlite3', 'error', `(${e.message})`);
+    printStatus('  → Fix', 'info', 'npm install better-sqlite3  (requires build tools: python3, make, gcc)');
+  }
+
+  // Check 2: hnswlib-node (required for vector search)
+  result.checked++;
+  try {
+    require('hnswlib-node');
+    result.passed++;
+    printStatus('hnswlib-node', 'ok', '(native module loaded)');
+  } catch (e) {
+    result.failed.push({ name: 'hnswlib-node', error: e.message });
+    printStatus('hnswlib-node', 'error', `(${e.message})`);
+    printStatus('  → Fix', 'info', 'npm install hnswlib-node  (requires build tools)');
+  }
+
+  // Check 3: @xenova/transformers (required for embeddings)
+  result.checked++;
+  try {
+    require('@xenova/transformers');
+    result.passed++;
+    printStatus('@xenova/transformers', 'ok', '(embedding model library loaded)');
+  } catch (e) {
+    result.failed.push({ name: '@xenova/transformers', error: e.message });
+    printStatus('@xenova/transformers', 'error', `(${e.message})`);
+    printStatus('  → Fix', 'info', 'npm install @xenova/transformers');
+  }
+
+  // Check 4: API key (optional but recommended)
+  result.checked++;
+  try {
+    const { hasApiKey, getKeySource } = require('../core/api-key.cjs');
+    if (hasApiKey()) {
+      result.passed++;
+      printStatus('Anthropic API key', 'ok', `(source: ${getKeySource()})`);
+    } else {
+      result.warnings.push('No API key — HyDE search and Haiku/Sonnet disabled');
+      printStatus('Anthropic API key', 'warn', '(not found — local-only mode)');
+      printStatus('  → Setup', 'info', 'cortex setup-key  or  https://console.anthropic.com/settings/keys');
+    }
+  } catch {
+    result.warnings.push('Could not check API key');
+    printStatus('Anthropic API key', 'warn', '(check failed)');
+  }
+
+  return result;
+}
+
+/**
  * Create required directories
  * @param {Object} options
  * @returns {Object} Result with created/existing counts
@@ -315,8 +385,19 @@ function printSummary(results) {
   console.log('📊 BOOTSTRAP SUMMARY');
   console.log('═'.repeat(60));
 
+  // Dependencies
+  if (results.deps) {
+    console.log(`\n🔍 Dependencies: ${results.deps.passed}/${results.deps.checked} passed`);
+    if (results.deps.failed.length > 0) {
+      console.log(`   ❌ Failed: ${results.deps.failed.map(d => d.name).join(', ')}`);
+    }
+    if (results.deps.warnings.length > 0) {
+      for (const w of results.deps.warnings) console.log(`   ⚠ ${w}`);
+    }
+  }
+
   // Directories
-  console.log(`\n📁 Directories: ${results.dirs.created} created, ${results.dirs.existing} existing`);
+  console.log(`📁 Directories: ${results.dirs.created} created, ${results.dirs.existing} existing`);
   if (results.dirs.errors.length > 0) {
     console.log(`   ⚠ ${results.dirs.errors.length} errors`);
   }
@@ -342,18 +423,23 @@ function printSummary(results) {
 
   // Overall status
   const hasErrors = results.dirs.errors.length > 0 || results.files.errors.length > 0;
+  const hasCriticalDepFails = results.deps?.failed.length > 0;
   console.log('\n' + '─'.repeat(60));
 
-  if (hasErrors) {
+  if (hasCriticalDepFails) {
+    console.log('❌ Bootstrap completed with dependency errors');
+    console.log('   Run: npm install   to install missing native modules');
+  } else if (hasErrors) {
     console.log('⚠️  Bootstrap completed with warnings');
   } else {
     console.log('✅ Bootstrap completed successfully!');
   }
 
   console.log(`\n💡 Next steps:
-   1. Verify MCP servers are configured in ~/.claude.json
-   2. Run: node ~/.claude/memory/scripts/status.cjs
-   3. Start a Claude Code session to test memory injection
+   1. ${results.deps && !results.deps.warnings.some(w => w.includes('API key')) ? '✓' : '→'} Set up API key: cortex setup-key
+   2. Verify MCP servers are configured in ~/.claude.json
+   3. Run: node ~/.claude/memory/scripts/status.cjs
+   4. Start a Claude Code session to test memory injection
 `);
 }
 
@@ -382,18 +468,21 @@ async function main() {
     seed: null,
   };
 
-  // Step 1: Create directories
+  // Step 1: Verify critical dependencies
+  results.deps = verifyDependencies(options);
+
+  // Step 2: Create directories
   results.dirs = createDirectories(options);
 
-  // Step 2: Create files
+  // Step 3: Create files
   results.files = createFiles(options);
 
-  // Step 3: Test MCP connectivity (if requested)
+  // Step 4: Test MCP connectivity (if requested)
   if (options.testMcp) {
     results.mcp = await testMcpConnectivity(options);
   }
 
-  // Step 4: Seed from CLAUDE.md (if requested)
+  // Step 5: Seed from CLAUDE.md (if requested)
   if (options.seed) {
     results.seed = await seedFromClaudeMd(options);
   }
