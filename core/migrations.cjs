@@ -280,6 +280,50 @@ const MIGRATIONS = [
       }
     },
   },
+
+  {
+    version: 9,
+    name: 'add_bitemporal_fields',
+    description: 'Add bi-temporal fields (valid_from, valid_to, ingested_at) for point-in-time queries and staleness detection',
+    up: `
+      ALTER TABLE memories ADD COLUMN valid_from TEXT DEFAULT NULL;
+      ALTER TABLE memories ADD COLUMN valid_to TEXT DEFAULT NULL;
+      ALTER TABLE memories ADD COLUMN ingested_at TEXT DEFAULT NULL;
+    `,
+    down: `
+      -- SQLite does not support DROP COLUMN before 3.35.0;
+      -- for safety we leave the columns in place on rollback.
+    `,
+    customUp: (db) => {
+      // Check which columns already exist
+      const tableInfo = db.prepare('PRAGMA table_info(memories)').all();
+      const existingCols = new Set(tableInfo.map(c => c.name));
+
+      if (!existingCols.has('valid_from')) {
+        db.exec('ALTER TABLE memories ADD COLUMN valid_from TEXT DEFAULT NULL');
+      }
+      if (!existingCols.has('valid_to')) {
+        db.exec('ALTER TABLE memories ADD COLUMN valid_to TEXT DEFAULT NULL');
+      }
+      if (!existingCols.has('ingested_at')) {
+        db.exec('ALTER TABLE memories ADD COLUMN ingested_at TEXT DEFAULT NULL');
+      }
+
+      // Back-fill existing rows: ingested_at = created_at, valid_from = created_at
+      db.exec("UPDATE memories SET ingested_at = created_at WHERE ingested_at IS NULL");
+      db.exec("UPDATE memories SET valid_from = created_at WHERE valid_from IS NULL");
+
+      // Index for temporal queries (only valid memories)
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_memories_valid_to
+        ON memories(valid_to) WHERE valid_to IS NULL
+      `);
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_memories_valid_from
+        ON memories(valid_from)
+      `);
+    },
+  },
 ];
 
 // =============================================================================

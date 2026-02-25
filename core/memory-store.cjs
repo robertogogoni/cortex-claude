@@ -16,7 +16,7 @@
 const path = require('path');
 const crypto = require('crypto');
 const { SQLiteStore } = require('./sqlite-store.cjs');
-const { expandPath } = require('./types.cjs');
+const { expandPath, createBitemporalFields } = require('./types.cjs');
 const { Embedder } = require('./embedder.cjs');
 
 // =============================================================================
@@ -196,6 +196,11 @@ class MemoryStore {
           created_at TEXT NOT NULL DEFAULT (datetime('now')),
           updated_at TEXT NOT NULL DEFAULT (datetime('now')),
 
+          -- Bi-temporal fields
+          valid_from TEXT DEFAULT NULL,
+          valid_to TEXT DEFAULT NULL,
+          ingested_at TEXT DEFAULT NULL,
+
           -- Status
           status TEXT DEFAULT 'active'
       );
@@ -329,15 +334,20 @@ class MemoryStore {
     // Serialize tags
     const tags = Array.isArray(memory.tags) ? JSON.stringify(memory.tags) : '[]';
 
+    // Generate bi-temporal fields
+    const bitemporal = createBitemporalFields(memory.validFrom || null);
+
     const sql = `
       INSERT INTO ${TABLE_NAME} (
         id, content, summary, memory_type, intent, tags,
         source, source_id, project_hash, session_id,
-        extraction_confidence, quality_score, embedding
+        extraction_confidence, quality_score, embedding,
+        valid_from, valid_to, ingested_at
       ) VALUES (
         @id, @content, @summary, @memory_type, @intent, @tags,
         @source, @source_id, @project_hash, @session_id,
-        @extraction_confidence, @quality_score, @embedding
+        @extraction_confidence, @quality_score, @embedding,
+        @valid_from, @valid_to, @ingested_at
       )
     `;
 
@@ -355,6 +365,9 @@ class MemoryStore {
       extraction_confidence: memory.extraction_confidence ?? 0.5,
       quality_score: memory.quality_score ?? 0.5,
       embedding: embeddingBlob,
+      valid_from: memory.validFrom || bitemporal.validFrom,
+      valid_to: memory.validTo || bitemporal.validTo,
+      ingested_at: bitemporal.ingestedAt,
     });
 
     this.stats.inserts++;
@@ -416,15 +429,20 @@ class MemoryStore {
 
     const tags = Array.isArray(memory.tags) ? JSON.stringify(memory.tags) : '[]';
 
+    // Generate bi-temporal fields
+    const bitemporal = createBitemporalFields(memory.validFrom || null);
+
     const sql = `
       INSERT INTO ${TABLE_NAME} (
         id, content, summary, memory_type, intent, tags,
         source, source_id, project_hash, session_id,
-        extraction_confidence, quality_score, embedding
+        extraction_confidence, quality_score, embedding,
+        valid_from, valid_to, ingested_at
       ) VALUES (
         @id, @content, @summary, @memory_type, @intent, @tags,
         @source, @source_id, @project_hash, @session_id,
-        @extraction_confidence, @quality_score, @embedding
+        @extraction_confidence, @quality_score, @embedding,
+        @valid_from, @valid_to, @ingested_at
       )
     `;
 
@@ -442,6 +460,9 @@ class MemoryStore {
       extraction_confidence: memory.extraction_confidence ?? 0.5,
       quality_score: memory.quality_score ?? 0.5,
       embedding: embeddingBlob,
+      valid_from: memory.validFrom || bitemporal.validFrom,
+      valid_to: memory.validTo || bitemporal.validTo,
+      ingested_at: bitemporal.ingestedAt,
     });
 
     this.stats.inserts++;
@@ -491,7 +512,10 @@ class MemoryStore {
       'extraction_confidence', 'quality_score', 'strength',
       'decay_score', 'status', 'embedding',
       // Usage tracking fields
-      'usage_count', 'usage_success_rate', 'last_accessed'
+      'usage_count', 'usage_success_rate', 'last_accessed',
+      // Bi-temporal fields (valid_from can be corrected, valid_to for invalidation)
+      'valid_from', 'valid_to',
+      // Note: ingested_at is intentionally NOT updatable (immutable)
     ];
 
     const setClauses = [];
@@ -916,7 +940,8 @@ class MemoryStore {
       source, source_id, project_hash, session_id,
       extraction_confidence, quality_score, usage_count,
       usage_success_rate, last_accessed, strength, decay_score,
-      created_at, updated_at, status
+      created_at, updated_at, status,
+      valid_from, valid_to, ingested_at
     `;
   }
 
