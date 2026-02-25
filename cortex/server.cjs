@@ -971,9 +971,33 @@ This provides a comprehensive project briefing.`
           result = await sonnet.infer(validatedArgs.concepts, validatedArgs.includeMemories);
           break;
 
-        case 'cortex__learn':
-          result = await sonnet.learn(validatedArgs.insight, validatedArgs.context, validatedArgs.type, validatedArgs.tags);
+        case 'cortex__learn': {
+          const { createElicitationSchema, processElicitationResult } = require('./elicitation-helper.cjs');
+
+          // Try elicitation if available (MCP 2025-11-25 feature)
+          let finalInsight = validatedArgs.insight;
+          try {
+            if (ctx?.mcpReq?.elicitInput) {
+              const qualityScore = 0.75; // Pre-analysis estimate; Sonnet refines after
+              const schema = createElicitationSchema(finalInsight, qualityScore);
+              const elicitResult = await ctx.mcpReq.elicitInput(schema);
+              const processed = processElicitationResult(elicitResult?.content, finalInsight);
+
+              if (processed.action === 'discard') {
+                result = { insight: finalInsight, discarded: true, message: 'Memory discarded by user.' };
+                break;
+              }
+              if (processed.action === 'edit') {
+                finalInsight = processed.content;
+              }
+            }
+          } catch (e) {
+            // Elicitation not supported — proceed with save
+          }
+
+          result = await sonnet.learn(finalInsight, validatedArgs.context, validatedArgs.type, validatedArgs.tags);
           break;
+        }
 
         case 'cortex__consolidate':
           result = await sonnet.consolidate(validatedArgs.scope, validatedArgs.type, validatedArgs.dryRun);
