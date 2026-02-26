@@ -348,22 +348,26 @@ class HaikuWorker {
     const startTime = Date.now();
     const timings = { analysis: 0, hyde: 0, orchestrator: 0, ranking: 0 };
 
-    // Step 1: Use Haiku to extract keywords and classify intent (with cache)
-    const analysisStart = Date.now();
-    let analysis = this.analysisCache.get(query, 'analysis');
-    let analysisCached = !!analysis;
+    // Step 1 + 1.5: Analysis and HyDE in parallel (they're independent — both only use raw query)
+    const parallelStart = Date.now();
 
-    if (!analysis) {
-      // Default fallback analysis (fast, no API)
-      analysis = {
-        keywords: this._extractKeywordsFast(query),
-        intent: this._classifyIntentFast(query),
-        criteria: query,
-      };
+    // Wrap analysis logic in an async function
+    const doAnalysis = async () => {
+      const analysisStart = Date.now();
+      let result = this.analysisCache.get(query, 'analysis');
+      let cached = !!result;
 
-      // Try Haiku enhancement (only if enabled)
-      if (this.enableApiCalls) {
-        const analysisPrompt = `You are a memory search optimizer. Given a user's query, extract:
+      if (!result) {
+        // Default fallback analysis (fast, no API)
+        result = {
+          keywords: this._extractKeywordsFast(query),
+          intent: this._classifyIntentFast(query),
+          criteria: query,
+        };
+
+        // Try Haiku enhancement (only if enabled)
+        if (this.enableApiCalls) {
+          const analysisPrompt = `You are a memory search optimizer. Given a user's query, extract:
 1. Key search terms (2-5 words most relevant for searching)
 2. Intent type (one of: debugging, implementing, learning, reviewing, planning, other)
 3. Relevance criteria (what makes a result relevant)
@@ -375,43 +379,56 @@ Respond in JSON format:
   "criteria": "Results about X solving Y"
 }`;
 
-        const haikuResponse = await this._callHaiku(analysisPrompt, query);
-        if (haikuResponse) {
-          try {
-            analysis = JSON.parse(haikuResponse);
-            // Cache the successful analysis
-            this.analysisCache.set(query, 'analysis', analysis);
-          } catch (e) {
-            // Use fallback analysis
+          const haikuResponse = await this._callHaiku(analysisPrompt, query);
+          if (haikuResponse) {
+            try {
+              result = JSON.parse(haikuResponse);
+              // Cache the successful analysis
+              this.analysisCache.set(query, 'analysis', result);
+            } catch (e) {
+              // Use fallback analysis
+            }
           }
         }
+      } else {
+        this.stats.cachedAnalysis++;
+        this.stats.cacheHits++;
       }
-    } else {
-      this.stats.cachedAnalysis++;
-      this.stats.cacheHits++;
-    }
-    timings.analysis = Date.now() - analysisStart;
-    this._log(`Analysis: ${timings.analysis}ms (cached: ${analysisCached})`);
+      const elapsed = Date.now() - analysisStart;
+      this._log(`Analysis: ${elapsed}ms (cached: ${cached})`);
+      return { result, cached, elapsed };
+    };
 
-    // Step 1.5: HyDE query expansion
-    // Generate a hypothetical answer document and use it as the search query.
-    // The hypothetical doc lives in the same embedding space as real documents,
-    // while the original query (a question) may not. This improves conceptual recall.
-    const hydeStart = Date.now();
-    let hydeDoc = null;
+    // Wrap HyDE logic in an async function
+    const doHyDE = async () => {
+      const hydeStart = Date.now();
+      let doc = null;
+
+      if (this.enableApiCalls) {
+        doc = await this._hydeExpand(query);
+      }
+      const elapsed = Date.now() - hydeStart;
+      this._log(`HyDE: ${elapsed}ms (expanded: ${!!doc})`);
+      return { doc, elapsed };
+    };
+
+    // Run both in parallel
+    const [analysisResult, hydeResult] = await Promise.all([doAnalysis(), doHyDE()]);
+
+    let analysis = analysisResult.result;
+    let analysisCached = analysisResult.cached;
+    timings.analysis = analysisResult.elapsed;
+
+    let hydeDoc = hydeResult.doc;
+    timings.hyde = hydeResult.elapsed;
+
     let searchQuery = query; // Default: use original query
-
-    if (this.enableApiCalls) {
-      hydeDoc = await this._hydeExpand(query);
-      if (hydeDoc) {
-        // Combine original query with HyDE document for best of both worlds:
-        // - Original query catches exact keyword matches
-        // - HyDE document catches conceptual/semantic matches
-        searchQuery = `${query}\n\n${hydeDoc}`;
-      }
-    }
-    timings.hyde = Date.now() - hydeStart;
-    this._log(`HyDE: ${timings.hyde}ms (expanded: ${!!hydeDoc})`);
+    if (hydeDoc) {
+      // Combine original query with HyDE document for best of both worlds:
+      // - Original query catches exact keyword matches
+      // - HyDE document catches conceptual/semantic matches
+      searchQuery = `${query}\n\n${hydeDoc}`;
+    };
 
     // Step 2: Query memory sources via orchestrator
     const orchestratorStart = Date.now();
@@ -440,8 +457,8 @@ Respond in JSON format:
     // - Results already have good relevance scores
     // - API calls are disabled
     const shouldUseApiRanking = this.enableApiCalls &&
-                                rankedMemories.length > limit * 3 &&
-                                rankedMemories.length > 10;
+                                rankedMemories.length > limit * 5 &&
+                                rankedMemories.length > 50;
 
     if (shouldUseApiRanking) {
       // Check cache first

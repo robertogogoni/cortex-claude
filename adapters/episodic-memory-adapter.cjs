@@ -130,8 +130,8 @@ class EpisodicMemoryAdapter extends BaseAdapter {
   async _ensureEmbedder() {
     if (this._embedder) return this._embedder;
 
-    const { Embedder } = require('../core/embedder.cjs');
-    this._embedder = new Embedder({ verbose: false });
+    const { getSharedEmbedder } = require('../core/embedder-provider.cjs');
+    this._embedder = getSharedEmbedder({ verbose: false });
     return this._embedder;
   }
 

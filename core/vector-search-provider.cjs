@@ -18,7 +18,7 @@
 const path = require('path');
 const fs = require('fs');
 const { expandPath } = require('./types.cjs');
-const { Embedder, EMBEDDING_DIM } = require('./embedder.cjs');
+const { getSharedEmbedder } = require('./embedder-provider.cjs');
 const { VectorIndex } = require('./vector-index.cjs');
 const { MemoryStore } = require('./memory-store.cjs');
 const { HybridSearch } = require('./hybrid-search.cjs');
@@ -139,7 +139,7 @@ class VectorSearchProvider {
 
       // 1. Initialize Embedder (lazy load model)
       try {
-        this._embedder = new Embedder(this._embedderConfig);
+        this._embedder = getSharedEmbedder(this._embedderConfig);
         results.embedder.success = true;
       } catch (error) {
         results.embedder.error = error.message;
