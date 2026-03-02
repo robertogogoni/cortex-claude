@@ -250,7 +250,7 @@ Use `/cortex stats` to see your actual usage and costs.
 
 ## MCP Tools
 
-Cortex exposes 6 MCP tools via its server:
+Cortex exposes 7 MCP tools via its server:
 
 ### Haiku-Powered (Fast, ~$0.25/1M tokens)
 
@@ -267,6 +267,12 @@ Cortex exposes 6 MCP tools via its server:
 | `cortex__infer` | Find non-obvious connections between concepts |
 | `cortex__learn` | Extract, analyze, and store insights with quality gating |
 | `cortex__consolidate` | Merge duplicates, remove outdated, reorganize memories |
+
+### Local (No API Cost)
+
+| Tool | Description |
+|------|-------------|
+| `cortex__health` | System health check: adapter stats, rate limits, resource usage |
 
 ## MCP Resources
 
@@ -622,14 +628,28 @@ Cortex uses JSONL (JSON Lines) format for efficient append-only storage:
 npm test
 
 # Run individual test suites
-node tests/test-adapters.cjs            # 48 tests - adapter registry & callbacks
-node tests/test-cli-renderer.cjs        # 44 tests - CortexRenderer visual engine
-node tests/test-episodic-sqlite.cjs     # 23 tests - episodic memory SQLite
-node tests/test-knowledge-graph-sqlite.cjs # 24 tests - knowledge graph SQLite
-node tests/test-core.cjs                # core infrastructure
-node tests/test-hooks.cjs               # hook components
-node tests/test-hyde.cjs                # HyDE query expansion
-node tests/test-lads.cjs                # LADS framework
+node tests/test-adapters.cjs               # adapter registry & callbacks
+node tests/test-bitemporal.cjs             # bi-temporal memory
+node tests/test-cli-renderer.cjs           # CortexRenderer visual engine
+node tests/test-core.cjs                   # core infrastructure
+node tests/test-decay.cjs                  # confidence decay
+node tests/test-e2e-flow.cjs              # end-to-end flow
+node tests/test-elicitation.cjs            # elicitation handling
+node tests/test-episodic-annotations.cjs   # episodic annotations
+node tests/test-episodic-sqlite.cjs        # episodic memory SQLite
+node tests/test-gemini-adapter.cjs         # Gemini adapter
+node tests/test-hooks.cjs                  # hook components
+node tests/test-hyde.cjs                   # HyDE query expansion
+node tests/test-integration-all-adapters.cjs # integration: all adapters
+node tests/test-knowledge-graph-sqlite.cjs # knowledge graph SQLite
+node tests/test-lads.cjs                   # LADS framework
+node tests/test-pre-compact.cjs            # PreCompact hook
+node tests/test-sampling-adapter.cjs       # MCP Sampling adapter
+node tests/test-sampling-integration.cjs   # MCP Sampling integration
+node tests/test-sqlite-store.cjs           # SQLite store
+node tests/test-stop-hook.cjs              # Stop hook
+node tests/test-warp-adapter.cjs           # Warp terminal adapter
+node tests/test-write-gate.cjs             # write gates
 ```
 
 **Current Status**: 447/447 tests passing across 22 test suites (including 2 live integration suites)
@@ -849,7 +869,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Inspired by research on autonomous AI learning (Voyager, CASCADE, SEAgent)
 - LADS principles adapted from continuous improvement methodologies
 - Vector search powered by [hnswlib-node](https://github.com/yoshoku/hnswlib-node) and [Transformers.js](https://github.com/xenova/transformers.js)
-- Models: Claude 3.5 Haiku and Claude Sonnet 4
+- Models: Claude Haiku 4.5 and Claude Sonnet 4.6
 
 ---
 
