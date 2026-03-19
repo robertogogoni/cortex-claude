@@ -1,6 +1,6 @@
 {
   "name": "cortex-memory",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Claude's Cognitive Layer - Zero-cost dual-model memory with MCP Sampling, HyDE search, write gates, and bi-temporal knowledge",
   "main": "index.cjs",
   "type": "commonjs",

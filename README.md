@@ -2,7 +2,7 @@
 
 # Cortex - Claude's Cognitive Layer
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
+[![Version](https://img.shields.io/badge/version-3.0.1-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-2025--11--25-purple.svg)](https://modelcontextprotocol.io/)

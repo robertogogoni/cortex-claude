@@ -26,6 +26,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Ensure we can find our modules — matches session-start.cjs / session-end.cjs
+const BASE_PATH = path.dirname(__dirname);
+
 // Dynamic requires with error handling
 let generateId, getTimestamp;
 
@@ -51,7 +54,7 @@ class StopHook {
    * @param {string} options.basePath - Base path for memory storage
    */
   constructor(options = {}) {
-    this.basePath = options.basePath || path.join(process.env.HOME || '', '.claude', 'memory');
+    this.basePath = options.basePath || BASE_PATH;
   }
 
   /**
