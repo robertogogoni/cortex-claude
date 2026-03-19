@@ -390,101 +390,97 @@ Prompts standardize common cognitive workflows:
 
 ## Quick Start
 
-### One-Command Install
+### Automated Install (Recommended)
 
 ```bash
-# Linux/macOS
-git clone https://github.com/robertogogoni/cortex-claude.git ~/.claude/memory
-cd ~/.claude/memory && npm install
+curl -fsSL https://raw.githubusercontent.com/robertogogoni/cortex-claude/master/install.sh | bash
 ```
 
-### Set Up API Key
+This clones the repo, installs dependencies, creates data directories, and registers the MCP server + all 4 hooks automatically.
 
-Cortex's intelligent features (HyDE search, Haiku queries, Sonnet reasoning) require an **Anthropic API key**.
-
-1. Create an account at [console.anthropic.com](https://console.anthropic.com/)
-2. Go to **Settings > API Keys**: [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-3. Click **Create Key** and copy the key (starts with `sk-ant-api03-...`)
-4. Store it:
+**Custom install path:**
 
 ```bash
-# Cortex reads from ~/.claude/.env (recommended)
-echo "ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE" > ~/.claude/.env
+CORTEX_DIR=~/my-custom-path curl -fsSL https://raw.githubusercontent.com/robertogogoni/cortex-claude/master/install.sh | bash
 ```
 
-Cortex resolves the key from (in order):
+Default install path: `~/.local/share/mcp-servers/cortex-claude/`
+
+### Manual Install
+
+```bash
+git clone https://github.com/robertogogoni/cortex-claude.git ~/.local/share/mcp-servers/cortex-claude
+cd ~/.local/share/mcp-servers/cortex-claude && npm install
+./install.sh  # Registers MCP server + hooks
+```
+
+### Set Up API Key (Optional)
+
+Cortex works out of the box with **zero-cost regex extraction**. For full features (HyDE vector search, Haiku queries, Sonnet reasoning), add an API key:
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE" >> ~/.claude/.env
+```
+
+Key resolution order:
 1. `~/.claude/.env` file
 2. `ANTHROPIC_API_KEY` environment variable
-3. Falls back to **local-only mode** (cache + keyword search still work, but no HyDE expansion, no Haiku analysis, no Sonnet reasoning)
+3. Falls back to **local-only mode** (regex extraction + keyword search still work)
 
-> **Cost estimate**: Haiku is ~$0.25/1M tokens (~$0.025/session). See [Cost Transparency](#cost-transparency) for details.
+> **Cost estimate**: ~$0.05/session with API enabled. See [Cost Transparency](#cost-transparency) for details.
 
-### Register MCP Server
+### What Gets Registered
 
-Add to `~/.claude.json`:
+The installer adds the following to your Claude Code configuration:
+
+**MCP Server** (`~/.claude.json`):
 
 ```json
 {
   "mcpServers": {
     "cortex": {
       "command": "node",
-      "args": ["/home/YOUR_USER/.claude/memory/cortex/server.cjs"],
+      "args": ["CORTEX_DIR/cortex/server.cjs"],
       "env": {}
     }
   }
 }
 ```
 
-### Register Session Hooks
-
-Add to `~/.claude/settings.json`:
+**Hooks** (`~/.claude/settings.json`):
 
 ```json
 {
   "hooks": {
     "SessionStart": [{
-      "hooks": [{
-        "type": "command",
-        "command": "node ~/.claude/memory/hooks/session-start.cjs"
-      }]
+      "hooks": [{ "type": "command", "command": "node CORTEX_DIR/hooks/session-start.cjs" }]
     }],
     "SessionEnd": [{
-      "hooks": [{
-        "type": "command",
-        "command": "node ~/.claude/memory/hooks/session-end.cjs"
-      }]
+      "hooks": [{ "type": "command", "command": "node CORTEX_DIR/hooks/session-end.cjs" }]
+    }],
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{ "type": "command", "command": "node CORTEX_DIR/hooks/pre-compact.cjs" }]
+    }],
+    "Stop": [{
+      "matcher": "*",
+      "hooks": [{ "type": "command", "command": "node CORTEX_DIR/hooks/stop-hook.cjs" }]
     }]
   }
 }
 ```
 
-### Install the `/cortex` Skill (Optional)
-
-Link the skill for slash command access:
-
-```bash
-mkdir -p ~/.claude/skills
-ln -s ~/.claude/memory/skills/cortex ~/.claude/skills/cortex
-```
-
-### Restart Claude Code
-
-The Cortex MCP tools, session hooks, and `/cortex` skill are now active!
+> Replace `CORTEX_DIR` with your install path (default: `~/.local/share/mcp-servers/cortex-claude`)
 
 ### Verify Installation
-
-After restarting Claude Code, verify everything works:
 
 ```bash
 # Check MCP server is connected
 claude mcp list | grep cortex
-# Expected: cortex: node /home/YOUR_USER/.claude/memory/cortex/server.cjs - Connected
+# Expected: cortex: node .../cortex-claude/cortex/server.cjs - ✓ Connected
 
-# Test the skill
-/cortex status
-
-# Verify vector index
-ls -la ~/.claude/memory/data/vector/
+# Run tests
+cd ~/.local/share/mcp-servers/cortex-claude && npm test
 ```
 
 ### First Use Example
