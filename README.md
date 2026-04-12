@@ -1,63 +1,91 @@
 <div align="center">
 
-# Cortex OS – The Biological AI Memory Engine
+# 🧠 Cortex OS
+### The Biological AI Memory Engine
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/robertogogoni/cortex-claude/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Architecture: Neural Topography](https://img.shields.io/badge/Architecture-Neural%20Topography-purple.svg)]()
-[![Search: HyDE & Vector](https://img.shields.io/badge/Search-HyDE%20%2B%20Vector-orange.svg)]()
-[![UX](https://img.shields.io/badge/Dashboard-Obsidian%20Graph-black.svg)]()
+<br />
 
-**A local-first, biomechanically-inspired persistent memory system. Complete with an interactive TUI, native Obsidian Vault routing, and standalone offline ingestion.**
+[![Version](https://img.shields.io/badge/version-3.0.1-000000?style=for-the-badge&logo=npm&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
+[![Tests Status](https://img.shields.io/badge/Tests-447_Passing-000000?style=for-the-badge&logo=githubactions&logoColor=white)]()
+[![Node.js](https://img.shields.io/badge/Node.js-18.x_|_20.x_|_22.x-000000?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-000000?style=for-the-badge&logo=anthropic&logoColor=white)]()
+[![Obsidian Maps](https://img.shields.io/badge/Vault-Native_Graph-000000?style=for-the-badge&logo=obsidian&logoColor=white)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-000000?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+
+<br />
+
+**A local-first, biomechanically-inspired persistent memory system.**
+*Equipped with an interactive TUI, dynamic Obsidian Vault spatial routing, and offline multi-modal ingestion.*
+
+[⚡ Quick Start](#-quick-start) &nbsp; • &nbsp; [🧬 Architecture](#-neural-topography) &nbsp; • &nbsp; [💻 Interactive CLI](#-cortex-terminal-ui) &nbsp; • &nbsp; [🔌 API Specs](#-api-endpoints)
 
 </div>
 
-## Overview
-AI agents traditionally suffer from context-window amnesia. They forget prior sessions, architectural decisions, and personal idioms the moment a script ends. **Cortex** fixes this biologically.
+---
 
-By substituting static flat-file logging with an autonomous, spatial memory topology, Cortex ingests multi-modal input (text & audio), routes inferences using an internal LLM extraction engine, and mathematically maps knowledge into an **Obsidian-ready Graph Network**.
+<br />
 
-### The Cortex Morphology (Neural Topography)
-Cortex discards traditional folder structures. Knowledge is routed biologically into neural geometries:
-- **`[Lobe]`** — The highest structural group (e.g. `Engineering`, `Prefrontal`, `Temporal`). 
-- **`[Region]`** — The domain classification (e.g. `Troubleshooting`, `Data Processing`).
-- **`[Cluster]`** — The synaptic target containing isolated, immutable atomic facts.
+## 🧬 Neural Topography
+
+AI agents traditionally suffer from context-window amnesia. They forget prior sessions, architectural decisions, and personal idioms the moment a session ends. **Cortex OS** resolves this biologically.
+
+By converting static log dumping into an **autonomous, spatial memory topology**, Cortex ingests multi-modal input (text & audio), computes structural inference using `claude-3-5-sonnet`, and mathematically anchors knowledge into a natively generated **Obsidian Knowledge Graph**.
+
+It completely discards generic folder logic in favor of geometric neural routing arrays:
+* **`[Lobe]`** — The highest structural group (e.g., `Engineering`, `Prefrontal`, `Temporal`). 
+* **`[Region]`** — The operational domain classification (e.g., `Data Processing`, `UX Design`).
+* **`[Cluster]`** — The synaptic target containing isolated, immutable atomic context.
+
+<br />
+
+<div align="center">
 
 ```mermaid
 graph TB
-    subgraph "Ingestion Sources"
-        Terminal[CLI Native Ingestion] --> Engine
-        Audio[Local Whisper Pipeline] --> Engine
-        Hooks[Terminal Hooks] --> Engine
-    end
+    subgraph " "
+        direction TB
+        subgraph Ingestion
+            Terminal[CLI Native Data] --> Engine
+            Audio[Whisper Pipeline] --> Engine
+            Hooks[Terminal Plugins] --> Engine
+        end
 
-    subgraph "Cortex Extraction Engine (LLM)"
-        Engine[Anthropic Neural Solver] -->|Classifies Topology| Vector[Local Vector DB]
-        Engine -->|Synthesizes Nodes| DB[JSONL SQLite Datastore]
-    end
+        subgraph Extraction Engine
+            Engine[Anthropic Neural Solver] -->|Synthesizes Nodes| DB[(JSONL SQlite)]
+            Engine -->|Classifies Topology| Vector[(Vector Embedder)]
+        end
 
-    subgraph "Visualization & Export"
-        DB -->|TUI Export| Vault[Obsidian Knowledge Graph]
-        Vault --> L1[05 Cortex Morphology / Lobes]
-        L1 --> L2[Clusters]
+        subgraph Output Array
+            DB -->|TUI Export| Vault[Obsidian Knowledge Graph]
+            Vault --> L1[05 Cortex Morphology]
+            L1 --> L2[Biomechanical Clusters]
+        end
     end
 ```
 
----
+</div>
 
-## Key Features
-
-- **Biological Extraction Algorithm:** Raw session memories are piped into `claude-3-5-sonnet` and translated into precise biomechanical arrays containing tags, confidence limits, and neural routing coordinates.
-- **Local Audio Pipeline (Whisper-Tiny):** Fully off-grid speech-to-text ingestion powered by local `@xenova/transformers` utilizing robust multi-modal data gathering.
-- **TUI Governance Dashboard:** Complete system management from the terminal. Trigger backups, query hybrid search parameters, or audit internal memories using an interactive Clack-style TUI.
-- **Direct Obsidian Graphing:** Automatically dynamically exports topological memories into a fully styled, glassmorphism-enabled Obsidian graphical vault for unparalleled UI mapping.
-- **Multi-Adapter Abstraction:** Fetches historical context spanning multiple frameworks dynamically (CLAUDE.md, Project memory, SQLite vectors).
+<br />
 
 ---
 
-## Quick Start & Installation
+## 🚀 Key Systems Overview
+
+| Feature Layer | Core Execution Engine | Operations Detail |
+| :--- | :--- | :--- |
+| **Biological Algorithms** | `claude-3-5-sonnet` | Translates raw text boundaries into highly precise biomechanical arrays with limits, weights, and node routing algorithms. |
+| **Local Whisper Pipeline** | `@xenova/transformers` | Off-grid speech-to-text pipeline utilizing lightweight transformer models for highly secure, multi-modal audio captures. |
+| **Dashboard Interface** | `@inquirer/prompts` | Terminal-UI (TUI) allowing offline audit querying, data ingesting, explicit memory migrations, and hardware back-ups. |
+| **Obsidian Integration** | `Vanilla Javascript` | Translates topographical memories dynamically into localized markdown layouts complete with styling and bi-directional indexing. |
+
+<br />
+
+---
+
+## ⚡ Quick Start
 
 ### 1. Global Installation
+Launch and hydrate the base repository anywhere to inject Cortex.
 ```bash
 git clone https://github.com/robertogogoni/cortex-claude.git ~/.cortex
 cd ~/.cortex
@@ -66,44 +94,53 @@ npm run install-tui
 ```
 
 ### 2. Environment Configuration
-Cortex's neural reasoning runs on Anthropic. You must supply an API key to permit automated topography solving.
+Cortex's neural reasoning uses the Anthropic Engine. Provide an API key to allow topography synthesis.
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-### 3. Launch the Dashboard
-Summon the full interactive CLI anywhere from your terminal:
+### 3. Launch TUI Dashboard
+Pull up the biological interface directly from the terminal layer globally.
 ```bash
 cortex-tui
 ```
 
----
-
-## Cortex Terminal UI (TUI)
-
-The Cortex TUI (`cortex-tui`) allows zero-friction operations across your entire knowledge environment:
-1. **🔍 Query Hybrid Search:** Combine FTS5 Keyword filtering with dense Vector Reciprocal Rank Fusion embeddings.
-2. **🎤 Ingest Knowledge:** Drag and drop audio files, transcripts, or code blocks into the engine.
-3. **📁 Export Obsidian Vault:** Dump your neural network directly into your local Obsidian graph for visualization.
-4. **🧠 Neural Migration:** Audit your database and geometrically assign any "flat" or legacy memories to their correct biomechanical structures.
+<br />
 
 ---
 
-## API Endpoints (For Third-Party Connectivity)
+## 💻 Cortex Terminal UI
 
-If you are developing your own HUD or frontend UI, Cortex fully supports REST endpoints natively. You can launch the server using `npm run cortex` on port `4000`.
+The Cortex CLI enables absolute graphical, highly-responsive offline systems maintenance over your mapped cognitive layers. From here, you possess absolute read/write supremacy over your nodes.
 
-- `POST /api/query` 
-  ```json
-  { "prompt": "How did I deploy the AWS bucket?", "domain": "engineering" }
-  ```
-- `GET /api/memories`
+- **`🔍 Query Engine`** – Invoke Hybrid-Search executing reciprocal rank fusions combining dense vectorized data to pinpoint semantic facts.
+- **`🎤 Ingest Data`** – Deposit hard data, voice logs, and syntax directly into the network.
+- **`📁 Build Vault`** – Rip your biological network locally into an Obsidian environment mapping.
+- **`🧠 Node Migration`** – Clean up rogue, legacy, or fragmented directories assigning them topographical positions.
+
+<br />
 
 ---
 
-## Contribution & Audit Logging
+## 🔌 API Endpoints
 
-Cortex is fundamentally designed with zero-cost scaling and `Request Feedback` limitations in mind. Ensure you execute `npm run test` against the system prior to resolving pull requests as the `ExtractionEngine` validates structural compliance heavily against mock SDK integrations.
+Cortex is architecturally abstracted extending its network over standard Web API sockets to assist 3rd Party HUD developments and multi-agent coordination. Boot `npm run cortex` locally to bind port `:4000`.
 
-## License
-MIT License. See [LICENSE](LICENSE) for full open-source permissions.
+**Query Route:**
+```bash
+curl -X POST http://localhost:4000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "How did I deploy the AWS bucket?", "domain": "engineering"}'
+```
+
+<br />
+
+---
+
+## 🛡️ Telemetry & Security
+This project ships rigorously tested CI/CD matrices to ensure `ExtractionEngine` integrity via Anthropic Mock protocols. Any pull request modification to `core` mechanics will be systematically rejected if `npm run test` generates structural variance errors against the graph engine.
+
+<div align="center">
+  <br />
+  <p>Maintained securely under the <b>MIT License</b>.</p>
+</div>
