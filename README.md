@@ -88,13 +88,11 @@ graph TB
 ## ⚡ Quick Start
 
 ### 1. Global Installation
-Launch and hydrate the base repository anywhere to inject Cortex.
+Bootstrap the entire Cortex cognitive layer and Terminal UI onto your machine dynamically with a single command.
 ```bash
-git clone https://github.com/robertogogoni/cortex-claude.git ~/.cortex
-cd ~/.cortex
-npm install
-npm run install-tui
+curl -fsSL https://raw.githubusercontent.com/robertogogoni/cortex-claude/master/install.sh | bash
 ```
+*(This automatically clones the repo, installs dependencies, maps configurations, registers the local MCP layer, and injects the telemetry hooks.)*
 
 ### 2. Environment Configuration
 Cortex's neural reasoning uses the Anthropic Engine. Provide an API key to allow topography synthesis.

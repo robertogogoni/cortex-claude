@@ -88,7 +88,8 @@ fi
 echo -e "${YELLOW}[3/6] Installing dependencies...${NC}"
 
 npm install --production 2>&1 | tail -1
-echo -e "  ${GREEN}✓${NC} Dependencies installed"
+npm run install-tui > /dev/null 2>&1
+echo -e "  ${GREEN}✓${NC} Dependencies and global CLI tools installed"
 
 # =============================================================================
 # Step 4: Create Data Directories
