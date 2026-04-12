@@ -4,11 +4,11 @@
 ### The Biological AI Memory Engine
 
 ```bash
-curl -fsSL raw.github.com/robertogogoni/cortex-claude/master/install.sh | bash
+npx -y github:robertogogoni/cortex-claude
 ```
 
-**A local-first, biomechanically-inspired persistent memory system.**
-*Equipped with an interactive TUI, dynamic Obsidian Vault spatial routing, and offline multi-modal ingestion.*
+**A local, persistent memory storage system for Claude.**
+*Features zero-shot vector mapping, an interactive terminal dashboard, Obsidian integration, and automatic event logging.*
 
 [⚡ Quick Start](#-tutorials-quick-start) &nbsp; • &nbsp; [💻 Usage](#-how-to-interactive-cli) &nbsp; • &nbsp; [🔌 API Reference](#-reference-api-specs--key-systems) &nbsp; • &nbsp; [🧬 Architecture](#-explanation-neural-topography)
 
@@ -28,20 +28,14 @@ curl -fsSL raw.github.com/robertogogoni/cortex-claude/master/install.sh | bash
 ## ⚡ Tutorials: Quick Start
 
 ### 1. Global Installation
-Bootstrap the entire Cortex cognitive layer and Terminal UI onto your machine dynamically with a single command.
+Launch the environment and run the Terminal Dashboard instantly using a zero-install prompt:
 ```bash
-curl -fsSL raw.github.com/robertogogoni/cortex-claude/master/install.sh | bash
+npx -y github:robertogogoni/cortex-claude
 ```
-*(This automatically clones the repo, installs dependencies, maps configurations, registers the local MCP layer, and injects the telemetry hooks.)*
+*(This automatically clones into a secure cache context, executes the setup wizard, checks for your API Keys, and boots the local dashboard!)*
 
-### 2. Environment Configuration
-Cortex's neural reasoning uses the Anthropic Engine. Provide an API key to allow topography synthesis.
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-### 3. Launch TUI Dashboard
-Pull up the biological interface directly from the terminal layer globally.
+### 2. Launch TUI Dashboard
+Pull up the interface directly from the terminal globally.
 ```bash
 cortex-tui
 ```
@@ -88,11 +82,11 @@ curl -X POST http://localhost:4000/api/query \
 
 ## 🧬 Explanation: Neural Topography
 
-AI agents traditionally suffer from context-window amnesia. They forget prior sessions, architectural decisions, and personal idioms the moment a session ends. **Cortex OS** resolves this biologically.
+AI agents traditionally suffer from context-window amnesia. They forget prior sessions, decisions, and idioms the moment a session ends. **Cortex OS** resolves this entirely.
 
-By converting static log dumping into an **autonomous, spatial memory topology**, Cortex ingests multi-modal input (text & audio), computes structural inference using `claude-3-5-sonnet`, and mathematically anchors knowledge into a natively generated **Obsidian Knowledge Graph**.
+Cortex automatically monitors your terminal sessions, ingests multi-modal data (text & audio), computes structural relevance using `claude-3-5-sonnet`, and stores knowledge into a fully searchable vector database mapping cleanly into an **Obsidian Vault**.
 
-It completely discards generic folder logic in favor of geometric neural routing arrays:
+It organizes memory using hierarchical data structures rather than flat logs:
 * **`[Lobe]`** — The highest structural group (e.g., `Engineering`, `Prefrontal`, `Temporal`). 
 * **`[Region]`** — The operational domain classification (e.g., `Data Processing`, `UX Design`).
 * **`[Cluster]`** — The synaptic target containing isolated, immutable atomic context.

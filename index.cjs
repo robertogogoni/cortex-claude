@@ -16,13 +16,13 @@
 'use strict';
 
 // Core exports
-const core = require('./core/index.cjs');
+const core = require('./src/core/index.cjs');
 
 // Hook exports
-const hooks = require('./hooks/index.cjs');
+const hooks = require('./src/hooks/index.cjs');
 
 // Adapter exports (v1.1.0 - Multi-source integration)
-const adapters = require('./adapters/index.cjs');
+const adapters = require('./src/adapters/index.cjs');
 
 // =============================================================================
 // COMBINED EXPORTS

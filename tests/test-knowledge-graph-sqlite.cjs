@@ -39,7 +39,7 @@ async function test(name, fn) {
 async function main() {
   console.log('\n━━━ KnowledgeGraphAdapter v2 — Direct File Access Tests ━━━\n');
 
-  const { KnowledgeGraphAdapter } = require('../adapters/knowledge-graph-adapter.cjs');
+  const { KnowledgeGraphAdapter } = require('../src/adapters/knowledge-graph-adapter.cjs');
 
   // -------------------------------------------------------------------------
   // Construction & Discovery

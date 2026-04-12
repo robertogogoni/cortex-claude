@@ -65,7 +65,7 @@ async function testAsync(name, fn) {
 let SQLiteStore;
 
 try {
-  const sqliteStore = require('../core/sqlite-store.cjs');
+  const sqliteStore = require('../src/core/sqlite-store.cjs');
   SQLiteStore = sqliteStore.SQLiteStore;
 } catch (error) {
   console.error('Failed to import SQLiteStore:', error.message);

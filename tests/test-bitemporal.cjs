@@ -3,7 +3,7 @@ const assert = require('assert');
 
 function testBitemporalFields() {
   // Test 1: Types include bi-temporal fields
-  const types = require('../core/types.cjs');
+  const types = require('../src/core/types.cjs');
 
   // Check that generateId and getTimestamp still work
   const id = types.generateId();

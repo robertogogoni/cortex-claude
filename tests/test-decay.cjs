@@ -2,7 +2,7 @@
 const assert = require('assert');
 
 function testConfidenceDecay() {
-  const { calculateDecay, DECAY_HALF_LIVES, MINIMUM_CONFIDENCE_FLOORS } = require('../core/confidence-decay.cjs');
+  const { calculateDecay, DECAY_HALF_LIVES, MINIMUM_CONFIDENCE_FLOORS } = require('../src/core/confidence-decay.cjs');
 
   // Test 1: Fresh memory has no decay
   const fresh = {

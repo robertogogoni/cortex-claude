@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { MarkdownTreeAdapter } = require('../adapters/markdown-tree-adapter.cjs');
+const { MarkdownTreeAdapter } = require('../src/adapters/markdown-tree-adapter.cjs');
 
 const TEST_DIR = path.join(os.tmpdir(), `markdown-tree-adapter-${Date.now()}`);
 

@@ -867,7 +867,7 @@ program
   .command('setup-key [key]')
   .description('Set up your Anthropic API key for HyDE search and Haiku/Sonnet features')
   .action(async (key) => {
-    const { getDiagnostics, setApiKey } = require('../core/api-key.cjs');
+    const { getDiagnostics, setApiKey } = require('../src/core/api-key.cjs');
     const diag = getDiagnostics();
 
     printHeader('API Key Setup', icons.gear);

@@ -65,7 +65,7 @@ async function testAsync(name, fn) {
 let hooks;
 
 try {
-  hooks = require('../hooks/index.cjs');
+  hooks = require('../src/hooks/index.cjs');
 } catch (error) {
   console.error('Failed to import hooks modules:', error.message);
   process.exit(1);

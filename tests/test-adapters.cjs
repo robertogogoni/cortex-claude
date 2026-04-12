@@ -75,12 +75,12 @@ let BaseAdapter, JSONLAdapter, EpisodicMemoryAdapter, KnowledgeGraphAdapter;
 let ClaudeMdAdapter, AdapterRegistry, createDefaultRegistry;
 
 try {
-  ({ BaseAdapter } = require('../adapters/base-adapter.cjs'));
-  ({ JSONLAdapter } = require('../adapters/jsonl-adapter.cjs'));
-  ({ EpisodicMemoryAdapter } = require('../adapters/episodic-memory-adapter.cjs'));
-  ({ KnowledgeGraphAdapter } = require('../adapters/knowledge-graph-adapter.cjs'));
-  ({ ClaudeMdAdapter } = require('../adapters/claudemd-adapter.cjs'));
-  ({ AdapterRegistry, createDefaultRegistry } = require('../adapters/index.cjs'));
+  ({ BaseAdapter } = require('../src/adapters/base-adapter.cjs'));
+  ({ JSONLAdapter } = require('../src/adapters/jsonl-adapter.cjs'));
+  ({ EpisodicMemoryAdapter } = require('../src/adapters/episodic-memory-adapter.cjs'));
+  ({ KnowledgeGraphAdapter } = require('../src/adapters/knowledge-graph-adapter.cjs'));
+  ({ ClaudeMdAdapter } = require('../src/adapters/claudemd-adapter.cjs'));
+  ({ AdapterRegistry, createDefaultRegistry } = require('../src/adapters/index.cjs'));
 } catch (error) {
   console.error('Failed to import adapter modules:', error.message);
   console.error(error.stack);

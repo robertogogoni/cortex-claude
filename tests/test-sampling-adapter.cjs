@@ -13,7 +13,7 @@ class MockMcpContext {
 }
 
 async function testSamplingAdapter() {
-  const { SamplingAdapter } = require('../cortex/sampling-adapter.cjs');
+  const { SamplingAdapter } = require('../src/cortex/sampling-adapter.cjs');
 
   const ctx = new MockMcpContext();
   const adapter = new SamplingAdapter({ mcpContext: ctx });

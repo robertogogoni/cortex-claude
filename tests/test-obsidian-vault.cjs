@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { ObsidianVaultExporter } = require('../core/obsidian-vault.cjs');
+const { ObsidianVaultExporter } = require('../src/core/obsidian-vault.cjs');
 
 const TEST_DIR = path.join(os.tmpdir(), `obsidian-vault-export-${Date.now()}`);
 

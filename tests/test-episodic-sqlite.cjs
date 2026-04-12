@@ -57,7 +57,7 @@ async function main() {
     process.exit(0);
   }
 
-  const { EpisodicMemoryAdapter, DEFAULT_DB_PATH } = require('../adapters/episodic-memory-adapter.cjs');
+  const { EpisodicMemoryAdapter, DEFAULT_DB_PATH } = require('../src/adapters/episodic-memory-adapter.cjs');
 
   // -------------------------------------------------------------------------
   // Construction & Availability

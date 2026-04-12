@@ -61,8 +61,8 @@ async function runIntegrationTests() {
   console.log('╚══════════════════════════════════════════════════════════════╝');
 
   // Import the VectorSearchProvider
-  const { VectorSearchProvider, getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
-  const { VectorSearchAdapter } = require('../adapters/vector-adapter.cjs');
+  const { VectorSearchProvider, getVectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
+  const { VectorSearchAdapter } = require('../src/adapters/vector-adapter.cjs');
 
   let provider;
   let adapter;
@@ -488,7 +488,7 @@ async function runIntegrationTests() {
 
   // Test 1: Always test infrastructure (no API key needed)
   await asyncTest('SonnetThinker._ensureVectorProvider() initializes correctly', async () => {
-    const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
+    const { SonnetThinker } = require('../src/cortex/sonnet-thinker.cjs');
 
     const infraTestDir = path.join(testDir, 'learn-infra-test');
     fs.mkdirSync(infraTestDir, { recursive: true });
@@ -509,7 +509,7 @@ async function runIntegrationTests() {
   // Test 2: Test learn() with API (may fall back to defaults if API fails)
   // This tests the dual-write logic regardless of API success
   await asyncTest('SonnetThinker.learn() writes to vector store (with fallback)', async () => {
-    const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
+    const { SonnetThinker } = require('../src/cortex/sonnet-thinker.cjs');
 
     const learnTestDir = path.join(testDir, 'learn-vector-test');
     fs.mkdirSync(learnTestDir, { recursive: true });
@@ -533,7 +533,7 @@ async function runIntegrationTests() {
     assert.ok(result.vectorId, 'Should have a vector ID');
 
     // Now search for it via vector search
-    const { VectorSearchProvider } = require('../core/vector-search-provider.cjs');
+    const { VectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
     const searchProvider = new VectorSearchProvider({
       basePath: learnTestDir,
     });

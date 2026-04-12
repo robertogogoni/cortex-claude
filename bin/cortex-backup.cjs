@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { expandPath } = require('../core/types.cjs');
+const { expandPath } = require('../src/core/types.cjs');
 
 const CORTEX_HOME = expandPath('~/.claude/memory');
 const DATA_DIR = path.join(CORTEX_HOME, 'data');

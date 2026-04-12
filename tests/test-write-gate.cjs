@@ -2,7 +2,7 @@
 const assert = require('assert');
 
 function testWriteGate() {
-  const { WriteGate } = require('../core/write-gate.cjs');
+  const { WriteGate } = require('../src/core/write-gate.cjs');
   const gate = new WriteGate();
 
   // Test 1: Behavior-changing insight passes

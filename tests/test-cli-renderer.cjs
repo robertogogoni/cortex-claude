@@ -33,7 +33,7 @@ async function asyncTest(name, fn) {
 // Import
 // =========================================================================
 
-const { CortexRenderer } = require('../hooks/cli-renderer.cjs');
+const { CortexRenderer } = require('../src/hooks/cli-renderer.cjs');
 
 // =========================================================================
 // Static Helpers

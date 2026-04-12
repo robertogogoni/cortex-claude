@@ -23,9 +23,9 @@ const {
   CONFIG,
   hashQuery,
   analyzeWithKeywords,
-} = require('../hooks/semantic-intent-analyzer.cjs');
+} = require('../src/hooks/semantic-intent-analyzer.cjs');
 
-const { ContextAnalyzer } = require('../hooks/context-analyzer.cjs');
+const { ContextAnalyzer } = require('../src/hooks/context-analyzer.cjs');
 
 // Test counter
 let passed = 0;
@@ -436,7 +436,7 @@ async function runTests() {
   console.log('\n=== QueryOrchestrator + Semantic Integration Tests ===\n');
 
   test('QueryOrchestrator respects semantic.enabled option', () => {
-    const { QueryOrchestrator } = require('../hooks/query-orchestrator.cjs');
+    const { QueryOrchestrator } = require('../src/hooks/query-orchestrator.cjs');
 
     const orchestrator1 = new QueryOrchestrator({
       basePath: '/home/rob/.claude/memory',

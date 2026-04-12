@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function testPreCompact() {
-  const { PreCompactHook } = require('../hooks/pre-compact.cjs');
+  const { PreCompactHook } = require('../src/hooks/pre-compact.cjs');
 
   const hook = new PreCompactHook({
     basePath: path.join(__dirname, 'fixtures/precompact'),

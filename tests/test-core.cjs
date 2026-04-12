@@ -64,12 +64,12 @@ async function testAsync(name, fn) {
 let types, storage, lockManager, writeQueue, errorHandler, config;
 
 try {
-  types = require('../core/types.cjs');
-  storage = require('../core/storage.cjs');
-  lockManager = require('../core/lock-manager.cjs');
-  writeQueue = require('../core/write-queue.cjs');
-  errorHandler = require('../core/error-handler.cjs');
-  config = require('../core/config.cjs');
+  types = require('../src/core/types.cjs');
+  storage = require('../src/core/storage.cjs');
+  lockManager = require('../src/core/lock-manager.cjs');
+  writeQueue = require('../src/core/write-queue.cjs');
+  errorHandler = require('../src/core/error-handler.cjs');
+  config = require('../src/core/config.cjs');
 } catch (error) {
   console.error('Failed to import modules:', error.message);
   process.exit(1);

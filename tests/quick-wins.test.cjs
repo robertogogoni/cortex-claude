@@ -108,7 +108,7 @@ function cleanup() {
 async function testMemoryScheduler() {
   console.log('\n=== Memory Scheduler Tests ===\n');
 
-  const { MemoryScheduler, DEFAULT_OPTIONS } = require('../core/memory-scheduler.cjs');
+  const { MemoryScheduler, DEFAULT_OPTIONS } = require('../src/core/memory-scheduler.cjs');
 
   // Test 1: Constructor and default options
   console.log('Test 1: Constructor and defaults...');
@@ -171,7 +171,7 @@ async function testUsageTracking() {
 
   // Test that the _trackUsage method exists in QueryOrchestrator
   console.log('Test 1: Method existence...');
-  const { QueryOrchestrator } = require('../hooks/query-orchestrator.cjs');
+  const { QueryOrchestrator } = require('../src/hooks/query-orchestrator.cjs');
   const orchestrator = new QueryOrchestrator({
     basePath: TEST_BASE,
   });

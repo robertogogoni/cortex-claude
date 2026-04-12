@@ -26,7 +26,7 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   // Load the registry factory — the SAME code path as production
-  const { createDefaultRegistry } = require('../adapters/index.cjs');
+  const { createDefaultRegistry } = require('../src/adapters/index.cjs');
 
   // Create registry WITHOUT mcpCaller — this is the exact scenario
   // that caused the 57-memory problem in HaikuWorker

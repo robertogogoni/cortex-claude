@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { expandPath } = require('../core/types.cjs');
+const { expandPath } = require('../src/core/types.cjs');
 
 const NEURAL_PATH = expandPath('~/.claude/memory/neural');
 const VAULT_PATH = expandPath('~/.obsidian-vault/Cortex Atlas');

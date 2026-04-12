@@ -157,8 +157,8 @@ async function testAsync(name, fn) {
 let GeminiAdapter, BaseAdapter;
 
 try {
-  ({ GeminiAdapter } = require('../adapters/gemini-adapter.cjs'));
-  ({ BaseAdapter } = require('../adapters/base-adapter.cjs'));
+  ({ GeminiAdapter } = require('../src/adapters/gemini-adapter.cjs'));
+  ({ BaseAdapter } = require('../src/adapters/base-adapter.cjs'));
 } catch (error) {
   console.error('Failed to import GeminiAdapter:', error.message);
   console.error('This is expected if running tests before implementation.');

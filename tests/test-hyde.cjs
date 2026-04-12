@@ -9,7 +9,7 @@ const assert = require('assert');
  */
 async function testHyDE() {
   const path = require('path');
-  const { HaikuWorker } = require('../cortex/haiku-worker.cjs');
+  const { HaikuWorker } = require('../src/cortex/haiku-worker.cjs');
 
   // =========================================================================
   // Test Group 1: _hydeExpand method behavior

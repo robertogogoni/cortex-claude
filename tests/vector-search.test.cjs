@@ -80,20 +80,20 @@ async function testModuleLoading() {
   console.log('\n=== Module Loading Tests ===\n');
 
   test('Embedder module loads', () => {
-    const { Embedder, LRUCache, EMBEDDING_DIM } = require('../core/embedder.cjs');
+    const { Embedder, LRUCache, EMBEDDING_DIM } = require('../src/core/embedder.cjs');
     assert.ok(Embedder, 'Embedder class should exist');
     assert.ok(LRUCache, 'LRUCache class should exist');
     assert.strictEqual(EMBEDDING_DIM, 384, 'EMBEDDING_DIM should be 384');
   });
 
   test('VectorIndex module loads', () => {
-    const { VectorIndex, DEFAULT_MAX_ELEMENTS } = require('../core/vector-index.cjs');
+    const { VectorIndex, DEFAULT_MAX_ELEMENTS } = require('../src/core/vector-index.cjs');
     assert.ok(VectorIndex, 'VectorIndex class should exist');
     assert.strictEqual(DEFAULT_MAX_ELEMENTS, 100000, 'DEFAULT_MAX_ELEMENTS should be 100000');
   });
 
   test('MemoryStore module loads', () => {
-    const { MemoryStore, MEMORY_TYPES, MEMORY_SOURCES, TABLE_NAME } = require('../core/memory-store.cjs');
+    const { MemoryStore, MEMORY_TYPES, MEMORY_SOURCES, TABLE_NAME } = require('../src/core/memory-store.cjs');
     assert.ok(MemoryStore, 'MemoryStore class should exist');
     assert.ok(MEMORY_TYPES, 'MEMORY_TYPES should exist');
     assert.ok(MEMORY_SOURCES, 'MEMORY_SOURCES should exist');
@@ -101,19 +101,19 @@ async function testModuleLoading() {
   });
 
   test('HybridSearch module loads', () => {
-    const { HybridSearch, DEFAULT_RRF_K } = require('../core/hybrid-search.cjs');
+    const { HybridSearch, DEFAULT_RRF_K } = require('../src/core/hybrid-search.cjs');
     assert.ok(HybridSearch, 'HybridSearch class should exist');
     assert.strictEqual(DEFAULT_RRF_K, 60, 'DEFAULT_RRF_K should be 60');
   });
 
   test('VectorSearchProvider module loads', () => {
-    const { VectorSearchProvider, getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
+    const { VectorSearchProvider, getVectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
     assert.ok(VectorSearchProvider, 'VectorSearchProvider class should exist');
     assert.ok(getVectorSearchProvider, 'getVectorSearchProvider function should exist');
   });
 
   test('VectorSearchAdapter module loads', () => {
-    const { VectorSearchAdapter } = require('../adapters/vector-adapter.cjs');
+    const { VectorSearchAdapter } = require('../src/adapters/vector-adapter.cjs');
     assert.ok(VectorSearchAdapter, 'VectorSearchAdapter class should exist');
   });
 
@@ -138,7 +138,7 @@ async function testModuleLoading() {
 async function testLRUCache() {
   console.log('\n=== LRU Cache Tests ===\n');
 
-  const { LRUCache } = require('../core/embedder.cjs');
+  const { LRUCache } = require('../src/core/embedder.cjs');
 
   test('Creates cache with default size', () => {
     const cache = new LRUCache();
@@ -239,7 +239,7 @@ async function testMemoryStore() {
 
   let MemoryStore, MEMORY_SOURCES;
   try {
-    ({ MemoryStore, MEMORY_SOURCES } = require('../core/memory-store.cjs'));
+    ({ MemoryStore, MEMORY_SOURCES } = require('../src/core/memory-store.cjs'));
   } catch (e) {
     skip('MemoryStore tests', `Module load failed: ${e.message}`);
     return;
@@ -453,7 +453,7 @@ async function testMemoryStore() {
 async function testEmbedder() {
   console.log('\n=== Embedder Tests ===\n');
 
-  const { Embedder, EMBEDDING_DIM } = require('../core/embedder.cjs');
+  const { Embedder, EMBEDDING_DIM } = require('../src/core/embedder.cjs');
 
   let embedder;
 
@@ -618,7 +618,7 @@ async function testVectorIndex() {
 
   let VectorIndex;
   try {
-    ({ VectorIndex } = require('../core/vector-index.cjs'));
+    ({ VectorIndex } = require('../src/core/vector-index.cjs'));
   } catch (e) {
     skip('VectorIndex tests', `hnswlib-node not installed: ${e.message}`);
     return;
@@ -756,10 +756,10 @@ async function testHybridSearch() {
 
   let HybridSearch, MemoryStore, VectorIndex, Embedder, DEFAULT_RRF_K, rrfScore;
   try {
-    ({ HybridSearch, DEFAULT_RRF_K, rrfScore } = require('../core/hybrid-search.cjs'));
-    ({ MemoryStore } = require('../core/memory-store.cjs'));
-    ({ VectorIndex } = require('../core/vector-index.cjs'));
-    ({ Embedder } = require('../core/embedder.cjs'));
+    ({ HybridSearch, DEFAULT_RRF_K, rrfScore } = require('../src/core/hybrid-search.cjs'));
+    ({ MemoryStore } = require('../src/core/memory-store.cjs'));
+    ({ VectorIndex } = require('../src/core/vector-index.cjs'));
+    ({ Embedder } = require('../src/core/embedder.cjs'));
   } catch (e) {
     skip('HybridSearch tests', `Dependencies missing: ${e.message}`);
     return;
@@ -934,8 +934,8 @@ async function testVectorSearchAdapter() {
 
   let VectorSearchAdapter, BaseAdapter;
   try {
-    ({ VectorSearchAdapter } = require('../adapters/vector-adapter.cjs'));
-    ({ BaseAdapter } = require('../adapters/base-adapter.cjs'));
+    ({ VectorSearchAdapter } = require('../src/adapters/vector-adapter.cjs'));
+    ({ BaseAdapter } = require('../src/adapters/base-adapter.cjs'));
   } catch (e) {
     skip('VectorSearchAdapter tests', `Module load failed: ${e.message}`);
     return;

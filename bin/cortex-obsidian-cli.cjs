@@ -18,9 +18,9 @@ const os = require('os');
 const { spawn } = require('child_process');
 const readline = require('readline');
 
-const { ObsidianVaultExporter } = require('../core/obsidian-vault.cjs');
-const { AdapterRegistry, createDefaultRegistry } = require('../adapters/index.cjs');
-const { expandPath } = require('../core/types.cjs');
+const { ObsidianVaultExporter } = require('../src/core/obsidian-vault.cjs');
+const { AdapterRegistry, createDefaultRegistry } = require('../src/adapters/index.cjs');
+const { expandPath } = require('../src/core/types.cjs');
 
 // ANSI colors for CLI
 const colors = {

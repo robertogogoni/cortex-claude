@@ -2,7 +2,7 @@
 const assert = require('assert');
 
 async function testHaikuUseSampling() {
-  const { HaikuWorker } = require('../cortex/haiku-worker.cjs');
+  const { HaikuWorker } = require('../src/cortex/haiku-worker.cjs');
   const mockAdapter = {
     complete: async (prompt, opts) => ({
       text: JSON.stringify({ intent: 'search', keywords: ['test'] }),
@@ -17,7 +17,7 @@ async function testHaikuUseSampling() {
 }
 
 async function testSonnetUseSampling() {
-  const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
+  const { SonnetThinker } = require('../src/cortex/sonnet-thinker.cjs');
   const mockAdapter = {
     complete: async (prompt, opts) => ({
       text: JSON.stringify({ quality: 8, value: 'test', suggestedTags: [], isDuplicate: false, priority: 'high', enhancedInsight: 'test' }),

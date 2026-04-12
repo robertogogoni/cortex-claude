@@ -8,6 +8,8 @@
 
 const { select, input, confirm } = require('@inquirer/prompts');
 const { execSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const CORTEX_CLI = path.join(__dirname, 'cortex.cjs');
@@ -18,7 +20,30 @@ console.log('\x1b[36m===========================================================
 console.log('\x1b[1m\x1b[36m  🧠  CORTEX MORPHOLOGY - TERMINAL UI \x1b[0m');
 console.log('\x1b[36m============================================================\x1b[0m\n');
 
+async function ensureApiKey() {
+  const envPath = path.join(os.homedir(), '.claude', '.env');
+  let hasKey = !!process.env.ANTHROPIC_API_KEY;
+  if (!hasKey && fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    if (content.includes('ANTHROPIC_API_KEY=sk-ant-')) hasKey = true;
+  }
+
+  if (!hasKey) {
+    console.log('\x1b[33m[Environment Wizard] Configuration Required.\x1b[0m');
+    const apiKey = await input({
+      message: 'Anthropic API Key not found. Please enter it to unlock topological reasoning (sk-ant-...):',
+      validate: (val) => val.startsWith('sk-ant-') || 'Key must begin with sk-ant-'
+    });
+    const claudeDir = path.dirname(envPath);
+    if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
+    fs.appendFileSync(envPath, `\nANTHROPIC_API_KEY=${apiKey}\n`);
+    process.env.ANTHROPIC_API_KEY = apiKey;
+    console.log('\x1b[32m[✓] API Key securely saved to ' + envPath + '\x1b[0m\n');
+  }
+}
+
 async function main() {
+  await ensureApiKey();
   let exit = false;
 
   while (!exit) {

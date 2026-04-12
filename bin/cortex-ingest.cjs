@@ -9,8 +9,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { expandPath } = require('../core/types.cjs');
-const { IngestionPipeline } = require('../core/ingestion-pipeline.cjs');
+const { expandPath } = require('../src/core/types.cjs');
+const { IngestionPipeline } = require('../src/core/ingestion-pipeline.cjs');
 
 // Colors
 const colors = {

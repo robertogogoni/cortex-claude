@@ -225,7 +225,7 @@ function createMockWarpDatabase(dbPath, options = {}) {
 let WarpSQLiteAdapter;
 
 try {
-  const warpAdapter = require('../adapters/warp-sqlite-adapter.cjs');
+  const warpAdapter = require('../src/adapters/warp-sqlite-adapter.cjs');
   WarpSQLiteAdapter = warpAdapter.WarpSQLiteAdapter;
 } catch (error) {
   console.error('Failed to import WarpSQLiteAdapter:', error.message);

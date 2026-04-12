@@ -18,10 +18,10 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 
-const { NeuralNetwork, NeuronNode } = require('../core/neural-network.cjs');
-const { ObsidianVaultExporter } = require('../core/obsidian-vault.cjs');
-const { createDefaultRegistry } = require('../adapters/index.cjs');
-const { expandPath } = require('../core/types.cjs');
+const { NeuralNetwork, NeuronNode } = require('../src/core/neural-network.cjs');
+const { ObsidianVaultExporter } = require('../src/core/obsidian-vault.cjs');
+const { createDefaultRegistry } = require('../src/adapters/index.cjs');
+const { expandPath } = require('../src/core/types.cjs');
 
 const CORTEX_HOME = expandPath('~/.claude/memory');
 const NEURAL_PATH = expandPath('~/.claude/memory/neural');

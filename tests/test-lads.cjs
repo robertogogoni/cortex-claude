@@ -64,7 +64,7 @@ async function testAsync(name, fn) {
 let lads;
 
 try {
-  lads = require('../core/lads/index.cjs');
+  lads = require('../src/core/lads/index.cjs');
 } catch (error) {
   console.error('Failed to import LADS modules:', error.message);
   process.exit(1);

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 async function testStopHook() {
-  const { StopHook } = require('../hooks/stop-hook.cjs');
+  const { StopHook } = require('../src/hooks/stop-hook.cjs');
 
   const hook = new StopHook({ basePath: '/tmp/cortex-test-stop' });
 

@@ -75,7 +75,7 @@ async function testAsync(name, fn) {
 let EpisodicAnnotationsLayer;
 
 try {
-  ({ EpisodicAnnotationsLayer } = require('../adapters/episodic-annotations-layer.cjs'));
+  ({ EpisodicAnnotationsLayer } = require('../src/adapters/episodic-annotations-layer.cjs'));
 } catch (error) {
   console.error('Failed to import EpisodicAnnotationsLayer:', error.message);
   console.error(error.stack);

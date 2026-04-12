@@ -51,8 +51,8 @@ async function runTests() {
   console.log('║          Learn Tool -> Vector Integration Tests              ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
-  const { SonnetThinker } = require('../cortex/sonnet-thinker.cjs');
-  const { getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
+  const { SonnetThinker } = require('../src/cortex/sonnet-thinker.cjs');
+  const { getVectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
 
   // Test 1: Verify vector provider lazy initialization
   await asyncTest('SonnetThinker has vector provider infrastructure', async () => {
@@ -116,7 +116,7 @@ async function runTests() {
     const testPath = path.join(testDir, 'test4');
     fs.mkdirSync(testPath, { recursive: true });
 
-    const { VectorSearchProvider } = require('../core/vector-search-provider.cjs');
+    const { VectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
 
     const sonnet = new SonnetThinker({
       basePath: testPath,
@@ -172,7 +172,7 @@ async function runTests() {
     const testPath = path.join(testDir, 'test5');
     fs.mkdirSync(testPath, { recursive: true });
 
-    const { VectorSearchProvider } = require('../core/vector-search-provider.cjs');
+    const { VectorSearchProvider } = require('../src/core/vector-search-provider.cjs');
 
     const sonnet = new SonnetThinker({
       basePath: testPath,

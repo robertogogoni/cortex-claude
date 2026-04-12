@@ -74,7 +74,7 @@ class CortexRenderer {
     // Read version from package.json
     try {
       const pkg = JSON.parse(fs.readFileSync(
-        path.join(__dirname, '..', 'package.json'), 'utf8'
+        path.join(__dirname, '..', '..', 'package.json'), 'utf8'
       ));
       this.version = pkg.version;
     } catch {

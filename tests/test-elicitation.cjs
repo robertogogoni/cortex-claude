@@ -3,7 +3,7 @@ const assert = require('assert');
 
 async function testElicitation() {
   // Test 1: Elicitation helper creates correct schema
-  const { createElicitationSchema } = require('../cortex/elicitation-helper.cjs');
+  const { createElicitationSchema } = require('../src/cortex/elicitation-helper.cjs');
 
   const schema = createElicitationSchema('Test insight', 0.85);
   assert(schema.message, 'Schema has message');
@@ -18,7 +18,7 @@ async function testElicitation() {
   assert(schema.requestedSchema.properties.edited, 'Schema has edited property');
 
   // Test 2: Process elicitation result - save
-  const { processElicitationResult } = require('../cortex/elicitation-helper.cjs');
+  const { processElicitationResult } = require('../src/cortex/elicitation-helper.cjs');
 
   const saveResult = processElicitationResult(
     { action: 'save' },
