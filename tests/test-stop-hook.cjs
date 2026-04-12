@@ -57,12 +57,12 @@ async function testStopHook() {
   assert(rootCause.success, 'Root cause handled');
   assert(rootCause.captured >= 1, 'Captured root cause pattern');
 
-  // Test 8: Max 3 captures per turn
+  // Test 8: Max 5 captures per turn (raised to accommodate insight blocks)
   const manySignals = await hook.execute({
-    response: 'Remember: use async/await. Remember: validate inputs. Remember: log errors. Remember: test edge cases. Remember: document APIs.',
+    response: 'Remember: use async/await. Remember: validate inputs. Remember: log errors. Remember: test edge cases. Remember: document APIs. Remember: one too many.',
   });
   assert(manySignals.success, 'Many signals handled');
-  assert(manySignals.captured <= 3, 'Max 3 captures per turn');
+  assert(manySignals.captured <= 5, 'Max 5 captures per turn');
 
   // Test 9: Short response ignored
   const shortResp = await hook.execute({
