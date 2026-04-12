@@ -5,12 +5,23 @@
 
 <br />
 
-[![Version](https://img.shields.io/badge/version-3.0.1-000000?style=for-the-badge&logo=npm&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
-[![Tests Status](https://img.shields.io/badge/Tests-447_Passing-000000?style=for-the-badge&logo=githubactions&logoColor=white)]()
-[![Node.js](https://img.shields.io/badge/Node.js-18.x_|_20.x_|_22.x-000000?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![NPM Version](https://img.shields.io/npm/v/cortex-memory?style=for-the-badge&color=000000&logo=npm&logoColor=white)](https://www.npmjs.com/package/cortex-memory)
+[![NPM Downloads](https://img.shields.io/npm/dt/cortex-memory?style=for-the-badge&color=000000&logo=npm&logoColor=white)](https://www.npmjs.com/package/cortex-memory)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/robertogogoni/cortex-claude/ci.yml?style=for-the-badge&color=000000&logo=githubactions&logoColor=white)](https://github.com/robertogogoni/cortex-claude/actions)
+[![GitHub Stars](https://img.shields.io/github/stars/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/network)
+[![GitHub Issues](https://img.shields.io/github/issues/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/issues)
+<br />
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-000000?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-000000?style=for-the-badge&logo=anthropic&logoColor=white)]()
 [![Obsidian Maps](https://img.shields.io/badge/Vault-Native_Graph-000000?style=for-the-badge&logo=obsidian&logoColor=white)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-000000?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![License](https://img.shields.io/github/license/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=opensourceinitiative&logoColor=white)](LICENSE)
+
+<br />
+
+<div align="center">
+  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=robertogogoni&repo=cortex-claude&layout=compact&theme=vision-friendly-dark&hide_border=true&bg_color=000000&title_color=ffffff&text_color=ffffff" alt="Top Languages Structure" />
+</div>
 
 <br />
 
