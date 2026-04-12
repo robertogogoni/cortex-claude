@@ -49,7 +49,11 @@ class WriteGate {
     const maxScore = Math.max(...Object.values(scores));
     const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
 
-    return maxScore >= 0.5 || totalScore > 1.5;
+    // Lowered from 0.5/1.5: original thresholds were too strict, filtering out
+    // nearly all real-world extractions (e.g., "always add signal handlers" scored
+    // only 0.2 total). A single keyword match (0.2) should be enough to pass when
+    // the extraction engine's confidence threshold (0.7) already pre-filtered noise.
+    return maxScore >= 0.2 || totalScore > 0.5;
   }
 
   /**

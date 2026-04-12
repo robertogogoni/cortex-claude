@@ -1,42 +1,47 @@
 #!/bin/bash
 #
-# Claude Memory Orchestrator (CMO) - Installation Script
+# Cortex - Claude's Cognitive Layer - Installation Script
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/robertogogoni/claude-memory-orchestrator/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/robertogogoni/cortex-claude/master/install.sh | bash
 #   OR
 #   ./install.sh
 #
+# Options:
+#   CORTEX_DIR=/custom/path ./install.sh   # Install to a custom location
+#
 # This script:
-#   1. Creates necessary directories
-#   2. Registers SessionStart and SessionEnd hooks
-#   3. Runs tests to verify installation
+#   1. Clones or updates the repository
+#   2. Installs npm dependencies
+#   3. Creates data directories
+#   4. Registers MCP server and all 4 hooks in Claude settings
+#   5. Runs tests to verify installation
 #
 
 set -e
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+DIM='\033[2m'
+NC='\033[0m'
 
-# Configuration
-CMO_DIR="${CMO_DIR:-$HOME/.claude/memory}"
+CORTEX_DIR="${CORTEX_DIR:-$HOME/.local/share/mcp-servers/cortex-claude}"
 SETTINGS_FILE="$HOME/.claude/settings.json"
+CLAUDE_JSON="$HOME/.claude.json"
 
-echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     Claude Memory Orchestrator (CMO) Installer         ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}╔═══════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║       Cortex - Claude's Cognitive Layer           ║${NC}"
+echo -e "${BLUE}║       v3.0.1 Installer                            ║${NC}"
+echo -e "${BLUE}╚═══════════════════════════════════════════════════╝${NC}"
 echo
 
 # =============================================================================
-# Step 1: Check Prerequisites
+# Step 1: Prerequisites
 # =============================================================================
-echo -e "${YELLOW}[1/5] Checking prerequisites...${NC}"
+echo -e "${YELLOW}[1/6] Checking prerequisites...${NC}"
 
-# Check Node.js
 if ! command -v node &> /dev/null; then
     echo -e "${RED}Error: Node.js is required but not installed.${NC}"
     echo "Install Node.js 18+ from: https://nodejs.org/"
@@ -45,189 +50,167 @@ fi
 
 NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
 if [ "$NODE_VERSION" -lt 18 ]; then
-    echo -e "${RED}Error: Node.js 18+ is required. Found: $(node -v)${NC}"
+    echo -e "${RED}Error: Node.js 18+ required. Found: $(node -v)${NC}"
     exit 1
 fi
+echo -e "  ${GREEN}✓${NC} Node.js $(node -v)"
 
-echo -e "  ✓ Node.js $(node -v)"
-
-# Check if CMO directory exists
-if [ ! -d "$CMO_DIR" ]; then
-    echo -e "${RED}Error: CMO not found at $CMO_DIR${NC}"
-    echo "Clone the repository first:"
-    echo "  git clone https://github.com/robertogogoni/claude-memory-orchestrator.git $CMO_DIR"
+if ! command -v git &> /dev/null; then
+    echo -e "${RED}Error: git is required but not installed.${NC}"
     exit 1
 fi
+echo -e "  ${GREEN}✓${NC} git $(git --version | cut -d' ' -f3)"
 
-echo -e "  ✓ CMO found at $CMO_DIR"
-
-# =============================================================================
-# Step 2: Create Data Directories
-# =============================================================================
-echo -e "${YELLOW}[2/5] Creating data directories...${NC}"
-
-mkdir -p "$CMO_DIR/data/memories"
-mkdir -p "$CMO_DIR/data/patterns"
-mkdir -p "$CMO_DIR/data/configs/history"
-mkdir -p "$CMO_DIR/logs"
-mkdir -p "$CMO_DIR/cache"
-
-echo -e "  ✓ Data directories created"
+if ! command -v claude &> /dev/null; then
+    echo -e "${YELLOW}  ! Claude Code CLI not found (optional, hooks will activate on next session)${NC}"
+fi
 
 # =============================================================================
-# Step 3: Initialize Default Config (if not exists)
+# Step 2: Clone or Update
 # =============================================================================
-echo -e "${YELLOW}[3/5] Initializing configuration...${NC}"
+echo -e "${YELLOW}[2/6] Installing Cortex to ${BLUE}$CORTEX_DIR${NC}..."
 
-CONFIG_FILE="$CMO_DIR/data/configs/current.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-    cat > "$CONFIG_FILE" << 'EOF'
-{
-  "version": "1.0.0",
-  "sessionStart": {
-    "slots": {
-      "maxTotal": 5,
-      "skills": 2,
-      "workingMemory": 2,
-      "patterns": 1
-    },
-    "relevanceThreshold": 0.3,
-    "contextWeights": {
-      "projectMatch": 0.4,
-      "intentMatch": 0.25,
-      "tagMatch": 0.2,
-      "recency": 0.15
-    }
-  },
-  "sessionEnd": {
-    "qualityThreshold": 0.4,
-    "maxExtractionsPerSession": 10,
-    "minContentLength": 50
-  },
-  "ladsCore": {
-    "evolutionEnabled": true,
-    "evolutionInterval": 86400000,
-    "minSamplesForEvolution": 10,
-    "maxHistoryDays": 90
-  }
-}
-EOF
-    echo -e "  ✓ Default configuration created"
+if [ -d "$CORTEX_DIR/.git" ]; then
+    echo -e "  ${DIM}Existing install found, pulling latest...${NC}"
+    cd "$CORTEX_DIR"
+    git pull --rebase origin master 2>/dev/null || git pull origin master
+    echo -e "  ${GREEN}✓${NC} Updated to $(git describe --tags --always 2>/dev/null || echo 'latest')"
 else
-    echo -e "  ✓ Configuration already exists"
+    mkdir -p "$(dirname "$CORTEX_DIR")"
+    git clone https://github.com/robertogogoni/cortex-claude.git "$CORTEX_DIR"
+    cd "$CORTEX_DIR"
+    echo -e "  ${GREEN}✓${NC} Cloned $(git describe --tags --always 2>/dev/null || echo 'latest')"
 fi
 
 # =============================================================================
-# Step 4: Register Hooks in Claude Settings
+# Step 3: Install Dependencies
 # =============================================================================
-echo -e "${YELLOW}[4/5] Registering hooks in Claude settings...${NC}"
+echo -e "${YELLOW}[3/6] Installing dependencies...${NC}"
 
-# Create settings file if it doesn't exist
-if [ ! -f "$SETTINGS_FILE" ]; then
-    echo '{}' > "$SETTINGS_FILE"
-fi
+npm install --production 2>&1 | tail -1
+echo -e "  ${GREEN}✓${NC} Dependencies installed"
 
-# Use Node.js to safely merge hook configuration
-node << EOF
+# =============================================================================
+# Step 4: Create Data Directories
+# =============================================================================
+echo -e "${YELLOW}[4/6] Creating data directories...${NC}"
+
+mkdir -p "$CORTEX_DIR/data/memories"
+mkdir -p "$CORTEX_DIR/data/patterns"
+mkdir -p "$CORTEX_DIR/data/projects"
+mkdir -p "$CORTEX_DIR/data/skills"
+mkdir -p "$CORTEX_DIR/data/vector"
+mkdir -p "$CORTEX_DIR/data/configs/history"
+mkdir -p "$CORTEX_DIR/data/backups"
+
+# Initialize memory JSONL files
+for f in working short-term long-term insights learnings; do
+    touch "$CORTEX_DIR/data/memories/${f}.jsonl"
+done
+for f in decisions outcomes; do
+    touch "$CORTEX_DIR/data/patterns/${f}.jsonl"
+done
+
+echo -e "  ${GREEN}✓${NC} Data directories ready"
+
+# =============================================================================
+# Step 5: Register MCP Server + Hooks
+# =============================================================================
+echo -e "${YELLOW}[5/6] Registering MCP server and hooks...${NC}"
+
+# Register MCP server in .claude.json
+node << REGISTER_MCP
 const fs = require('fs');
-const path = require('path');
+const cj = '$CLAUDE_JSON';
+const dir = '$CORTEX_DIR';
 
-const settingsFile = '$SETTINGS_FILE';
-const cmoDir = '$CMO_DIR';
+let config = {};
+try { config = JSON.parse(fs.readFileSync(cj, 'utf8')); } catch {}
+if (!config.mcpServers) config.mcpServers = {};
 
-// Read existing settings
+config.mcpServers.cortex = {
+  type: 'stdio',
+  command: 'node',
+  args: [dir + '/cortex/server.cjs'],
+  env: {}
+};
+
+fs.writeFileSync(cj, JSON.stringify(config, null, 2));
+console.log('  ✓ MCP server registered in .claude.json');
+REGISTER_MCP
+
+# Register all 4 hooks in settings.json
+node << REGISTER_HOOKS
+const fs = require('fs');
+const sf = '$SETTINGS_FILE';
+const dir = '$CORTEX_DIR';
+
 let settings = {};
-try {
-    const content = fs.readFileSync(settingsFile, 'utf8');
-    settings = JSON.parse(content);
-} catch (e) {
-    // Start fresh if file doesn't exist or is invalid
-    settings = {};
+try { settings = JSON.parse(fs.readFileSync(sf, 'utf8')); } catch {}
+if (!settings.hooks) settings.hooks = {};
+
+const cortexMarker = 'cortex-claude';
+
+function addHook(event, command, matcher) {
+  if (!settings.hooks[event]) settings.hooks[event] = [];
+  // Remove existing cortex hooks
+  settings.hooks[event] = settings.hooks[event].filter(h =>
+    !h.hooks?.some(hh => hh.command?.includes(cortexMarker))
+  );
+  const entry = { hooks: [{ type: 'command', command }] };
+  if (matcher) entry.matcher = matcher;
+  settings.hooks[event].push(entry);
 }
 
-// Ensure hooks object exists
-if (!settings.hooks) {
-    settings.hooks = {};
-}
+addHook('SessionStart', 'node ' + dir + '/hooks/session-start.cjs');
+addHook('SessionEnd',   'node ' + dir + '/hooks/session-end.cjs');
+addHook('PreCompact',   'node ' + dir + '/hooks/pre-compact.cjs', '*');
+addHook('Stop',         'node ' + dir + '/hooks/stop-hook.cjs', '*');
 
-// Define CMO hooks
-const sessionStartHook = {
-    hooks: [{
-        type: "command",
-        command: \`node \${cmoDir}/hooks/session-start.cjs\`
-    }]
-};
-
-const sessionEndHook = {
-    hooks: [{
-        type: "command",
-        command: \`node \${cmoDir}/hooks/session-end.cjs\`
-    }]
-};
-
-// Add/update SessionStart hooks
-if (!settings.hooks.SessionStart) {
-    settings.hooks.SessionStart = [];
-}
-// Remove any existing CMO hooks first
-settings.hooks.SessionStart = settings.hooks.SessionStart.filter(h =>
-    !h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-start'))
-);
-settings.hooks.SessionStart.push(sessionStartHook);
-
-// Add/update SessionEnd hooks
-if (!settings.hooks.SessionEnd) {
-    settings.hooks.SessionEnd = [];
-}
-// Remove any existing CMO hooks first
-settings.hooks.SessionEnd = settings.hooks.SessionEnd.filter(h =>
-    !h.hooks?.some(hh => hh.command?.includes('memory/hooks/session-end'))
-);
-settings.hooks.SessionEnd.push(sessionEndHook);
-
-// Write updated settings
-fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+fs.writeFileSync(sf, JSON.stringify(settings, null, 2));
 console.log('  ✓ SessionStart hook registered');
 console.log('  ✓ SessionEnd hook registered');
-EOF
+console.log('  ✓ PreCompact hook registered');
+console.log('  ✓ Stop hook registered (insight capture)');
+REGISTER_HOOKS
 
 # =============================================================================
-# Step 5: Run Tests
+# Step 6: Verify
 # =============================================================================
-echo -e "${YELLOW}[5/5] Running tests...${NC}"
+echo -e "${YELLOW}[6/6] Verifying installation...${NC}"
 
-cd "$CMO_DIR"
+cd "$CORTEX_DIR"
 
-# Run tests and capture output
-if node tests/test-core.cjs > /dev/null 2>&1 && \
-   node tests/test-hooks.cjs > /dev/null 2>&1 && \
-   node tests/test-lads.cjs > /dev/null 2>&1; then
-    echo -e "  ✓ All tests passed (90/90)"
+PASS=0
+FAIL=0
+for test in test-core test-hooks test-lads test-write-gate test-stop-hook; do
+    if node "tests/${test}.cjs" > /dev/null 2>&1; then
+        PASS=$((PASS + 1))
+    else
+        FAIL=$((FAIL + 1))
+    fi
+done
+
+if [ "$FAIL" -eq 0 ]; then
+    echo -e "  ${GREEN}✓${NC} All $PASS test suites passed"
 else
-    echo -e "${RED}  ✗ Some tests failed${NC}"
-    echo "Run tests manually for details:"
-    echo "  node $CMO_DIR/tests/test-core.cjs"
-    echo "  node $CMO_DIR/tests/test-hooks.cjs"
-    echo "  node $CMO_DIR/tests/test-lads.cjs"
+    echo -e "  ${YELLOW}!${NC} ${PASS} passed, ${FAIL} failed (run 'npm test' for details)"
 fi
 
 # =============================================================================
-# Complete!
+# Done
 # =============================================================================
 echo
-echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║     Installation Complete!                              ║${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
+echo -e "${GREEN}╔═══════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║       Cortex installed successfully!              ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════════════════╝${NC}"
 echo
-echo -e "${BLUE}CMO is now active. Start a new Claude Code session to begin!${NC}"
+echo -e "  Install path:  ${BLUE}$CORTEX_DIR${NC}"
+echo -e "  MCP server:    ${BLUE}cortex${NC} (registered in .claude.json)"
+echo -e "  Hooks:         ${BLUE}4 active${NC} (SessionStart, SessionEnd, PreCompact, Stop)"
 echo
-echo "What happens now:"
-echo "  • SessionStart: Relevant memories injected at conversation start"
-echo "  • SessionEnd: Learnings extracted when session ends"
-echo "  • LADS: System improves over time based on outcomes"
+echo -e "  ${YELLOW}Restart Claude Code to activate.${NC}"
 echo
-echo "Commands:"
-echo "  npm test          - Run all tests"
-echo "  npm run status    - Check CMO status"
+echo -e "  ${DIM}Optional: Set API key for full features (HyDE search, Sonnet reasoning):${NC}"
+echo -e "  ${DIM}echo \"ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY\" >> ~/.claude/.env${NC}"
 echo
-echo -e "${YELLOW}Tip: The system learns over time. The more you use it, the smarter it gets!${NC}"

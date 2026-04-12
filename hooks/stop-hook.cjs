@@ -26,6 +26,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Ensure we can find our modules — matches session-start.cjs / session-end.cjs
+const BASE_PATH = path.dirname(__dirname);
+
 // Dynamic requires with error handling
 let generateId, getTimestamp;
 
@@ -51,7 +54,7 @@ class StopHook {
    * @param {string} options.basePath - Base path for memory storage
    */
   constructor(options = {}) {
-    this.basePath = options.basePath || path.join(process.env.HOME || '', '.claude', 'memory');
+    this.basePath = options.basePath || BASE_PATH;
   }
 
   /**
@@ -113,6 +116,17 @@ class StopHook {
       /never\s+(.{10,}?)\s+without/i,
     ];
 
+    // Extract ★ Insight blocks (multi-line, between marker lines)
+    const insightBlockRegex = /★ Insight[─\s]*\n([\s\S]*?)(?:\n─{10,}|$)/g;
+    let blockMatch;
+    while ((blockMatch = insightBlockRegex.exec(text)) !== null) {
+      const blockContent = blockMatch[1].trim();
+      if (blockContent.length > 15 && !seen.has(blockContent)) {
+        seen.add(blockContent);
+        items.push({ type: 'insight', content: blockContent, confidence: 0.85 });
+      }
+    }
+
     for (const sentence of sentences) {
       const trimmed = sentence.trim();
 
@@ -144,8 +158,8 @@ class StopHook {
       }
     }
 
-    // Max 3 items per turn to avoid noise
-    return items.slice(0, 3);
+    // Max 5 items per turn (raised from 3 to accommodate insight blocks)
+    return items.slice(0, 5);
   }
 
   /**
