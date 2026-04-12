@@ -5,17 +5,17 @@
 
 <br />
 
-[![Latest Release](https://img.shields.io/github/v/release/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=git&logoColor=white)](https://github.com/robertogogoni/cortex-claude/commits/master)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/robertogogoni/cortex-claude/ci.yml?style=for-the-badge&color=000000&logo=githubactions&logoColor=white)](https://github.com/robertogogoni/cortex-claude/actions)
-[![GitHub Stars](https://img.shields.io/github/stars/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/network)
-[![GitHub Issues](https://img.shields.io/github/issues/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/issues)
+[![Latest Release](https://img.shields.io/github/v/release/robertogogoni/cortex-claude?style=for-the-badge&color=7aa2f7&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/robertogogoni/cortex-claude?style=for-the-badge&color=7aa2f7&logo=git&logoColor=white)](https://github.com/robertogogoni/cortex-claude/commits/master)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/robertogogoni/cortex-claude/ci.yml?style=for-the-badge&color=9ece6a&logo=githubactions&logoColor=white)](https://github.com/robertogogoni/cortex-claude/actions)
+[![GitHub Stars](https://img.shields.io/github/stars/robertogogoni/cortex-claude?style=for-the-badge&color=e0af68&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/robertogogoni/cortex-claude?style=for-the-badge&color=e0af68&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/network)
+[![GitHub Issues](https://img.shields.io/github/issues/robertogogoni/cortex-claude?style=for-the-badge&color=f7768e&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/issues)
 <br />
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-000000?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-000000?style=for-the-badge&logo=anthropic&logoColor=white)
-![Obsidian Maps](https://img.shields.io/badge/Vault-Native_Graph-000000?style=for-the-badge&logo=obsidian&logoColor=white)
-[![License](https://img.shields.io/github/license/robertogogoni/cortex-claude?style=for-the-badge&color=000000&logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-9ece6a?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-bb9af7?style=for-the-badge&logo=anthropic&logoColor=white)
+![Obsidian Maps](https://img.shields.io/badge/Vault-Native_Graph-bb9af7?style=for-the-badge&logo=obsidian&logoColor=white)
+[![License](https://img.shields.io/github/license/robertogogoni/cortex-claude?style=for-the-badge&color=7aa2f7&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 <br />
 
