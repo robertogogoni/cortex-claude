@@ -3,24 +3,21 @@
 # 🧠 Cortex OS
 ### The Biological AI Memory Engine
 
-[![Latest Release](https://img.shields.io/github/v/release/robertogogoni/cortex-claude?style=flat-square&color=7aa2f7&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/robertogogoni/cortex-claude?style=flat-square&color=7aa2f7&logo=git&logoColor=white)](https://github.com/robertogogoni/cortex-claude/commits/master)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/robertogogoni/cortex-claude/ci.yml?style=flat-square&color=9ece6a&logo=githubactions&logoColor=white)](https://github.com/robertogogoni/cortex-claude/actions)
-[![GitHub Stars](https://img.shields.io/github/stars/robertogogoni/cortex-claude?style=flat-square&color=e0af68&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/robertogogoni/cortex-claude?style=flat-square&color=e0af68&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/network)
-[![GitHub Issues](https://img.shields.io/github/issues/robertogogoni/cortex-claude?style=flat-square&color=f7768e&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/issues)
-<br />
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-9ece6a?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-bb9af7?style=flat-square&logo=anthropic&logoColor=white)
-![Obsidian Maps](https://img.shields.io/badge/Vault-Native_Graph-bb9af7?style=flat-square&logo=obsidian&logoColor=white)
-[![License](https://img.shields.io/github/license/robertogogoni/cortex-claude?style=flat-square&color=7aa2f7&logo=opensourceinitiative&logoColor=white)](LICENSE)
-
-<br />
+```bash
+curl -fsSL https://raw.githubusercontent.com/robertogogoni/cortex-claude/master/install.sh | bash
+```
 
 **A local-first, biomechanically-inspired persistent memory system.**
 *Equipped with an interactive TUI, dynamic Obsidian Vault spatial routing, and offline multi-modal ingestion.*
 
 [⚡ Quick Start](#-quick-start) &nbsp; • &nbsp; [🧬 Architecture](#-neural-topography) &nbsp; • &nbsp; [💻 Interactive CLI](#-cortex-terminal-ui) &nbsp; • &nbsp; [🔌 API Specs](#-api-endpoints)
+
+<br />
+
+[![Latest Release](https://img.shields.io/github/v/release/robertogogoni/cortex-claude?style=flat-square&color=7aa2f7&logo=github&logoColor=white)](https://github.com/robertogogoni/cortex-claude/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/robertogogoni/cortex-claude/ci.yml?style=flat-square&color=9ece6a&logo=githubactions&logoColor=white)](https://github.com/robertogogoni/cortex-claude/actions)
+![Anthropic](https://img.shields.io/badge/Engine-Claude_3.5_Sonnet-bb9af7?style=flat-square&logo=anthropic&logoColor=white)
+[![License](https://img.shields.io/github/license/robertogogoni/cortex-claude?style=flat-square&color=7aa2f7&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 </div>
 
