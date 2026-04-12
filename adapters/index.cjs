@@ -19,6 +19,7 @@ const { GeminiAdapter } = require('./gemini-adapter.cjs');
 const { WarpSQLiteAdapter } = require('./warp-sqlite-adapter.cjs');
 const { VectorSearchAdapter } = require('./vector-adapter.cjs');
 const { EpisodicAnnotationsLayer } = require('./episodic-annotations-layer.cjs');
+const { MarkdownTreeAdapter } = require('./markdown-tree-adapter.cjs');
 const { expandPath } = require('../core/types.cjs');
 
 // =============================================================================
@@ -328,6 +329,16 @@ function createDefaultRegistry(config = {}) {
     cacheTimeout: claudeMdConfig.cacheTimeout || 60000,
   }));
 
+  // 4b. Markdown Tree Adapter (generic markdown memory trees)
+  const markdownTreeConfig = config.adapters?.markdownTree || {};
+  const markdownRoots = markdownTreeConfig.roots || [];
+  registry.register(new MarkdownTreeAdapter({
+    enabled: markdownTreeConfig.enabled !== false,
+    roots: markdownRoots,
+    cacheTTL: markdownTreeConfig.cacheTTL || 5 * 60 * 1000,
+    maxFileSizeBytes: markdownTreeConfig.maxFileSizeBytes || 512 * 1024,
+  }));
+
   // 5. Gemini Adapter (file-based - Antigravity brain sessions)
   const geminiConfig = config.adapters?.gemini || {};
   registry.register(new GeminiAdapter({
@@ -386,6 +397,7 @@ module.exports = {
   EpisodicMemoryAdapter,
   KnowledgeGraphAdapter,
   ClaudeMdAdapter,
+  MarkdownTreeAdapter,
   GeminiAdapter,
   WarpSQLiteAdapter,
   VectorSearchAdapter,

@@ -115,6 +115,29 @@ class WarpSQLiteAdapter extends BaseAdapter {
   }
 
   /**
+   * Extract all available memories from Warp databases
+   * @param {import('./base-adapter.cjs').QueryOptions} [options]
+   * @returns {Promise<import('./base-adapter.cjs').MemoryRecord[]>}
+   */
+  async harvest(options = {}) {
+    return this._executeQuery(async () => {
+      const allRecords = [];
+
+      for (const dbPath of this.databasePaths) {
+        try {
+          // For harvesting, we use a minimal context and empty options to get everything
+          const records = await this._queryDatabase(dbPath, {}, options);
+          allRecords.push(...records);
+        } catch (error) {
+          console.warn(`[WarpSQLiteAdapter] Failed to harvest ${dbPath}: ${error.message}`);
+        }
+      }
+
+      return allRecords;
+    });
+  }
+
+  /**
    * Check if any Warp database is available
    * @returns {Promise<boolean>}
    */
@@ -165,6 +188,36 @@ class WarpSQLiteAdapter extends BaseAdapter {
     // Extract project hash from working directory
     const projectHash = raw.working_directory || null;
 
+    // Build a meaningful summary title
+    let title = '';
+    if (isQuery) {
+      const parsed = this._safeParseJSON(raw.input);
+      if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+        for (const item of parsed) {
+          if (item.Query && item.Query.text) {
+            title = item.Query.text.split(' ').slice(0, 6).join(' ') + '...';
+            break;
+          }
+          if (item.ActionResult) {
+            const typeMatch = Object.keys(item.ActionResult.result || {})[0];
+            if (typeMatch) {
+              title = `Warp Action: ${typeMatch}`;
+              break;
+            }
+          }
+        }
+      }
+      if (!title) {
+        title = content.split('\n')[0].slice(0, 50).trim() + '...';
+      }
+    } else if (isAgent) {
+      title = content.split('\n')[0].replace('user:', '').slice(0, 50).trim() + '...';
+    }
+
+    if (title.includes('ActionResult') || !title || title.trim() === '...') {
+      title = isAgent ? 'Warp Agent Conversation' : 'Warp AI Command';
+    }
+
     // Extract tags from content
     const tags = this._extractTags(content);
 
@@ -194,7 +247,8 @@ class WarpSQLiteAdapter extends BaseAdapter {
       version: 1,
       type,
       content,
-      summary: content.slice(0, 100).replace(/\n/g, ' '),
+      summary: title,
+      _noteTitle: title,
       projectHash,
       tags,
       intent,

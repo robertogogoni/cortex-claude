@@ -7,6 +7,19 @@
 **Estimated Effort:** ~50 days across 36 tasks
 **Replaces:** Phase H "Future" placeholder in `2026-02-25-cortex-v3-full-transformation.md`
 
+**See also:** [Master Implementation Index](2026-03-02-cortex-implementation-index.md) — links to all phase plans
+
+### Implementation Plans (TDD, test-first code)
+
+| Phase | Plan |
+|-------|------|
+| **F** | [Phase F: Research-Backed Retrieval](2026-03-02-cortex-phase-f-implementation.md) |
+| **G** | [Phase G: Memory Lifecycle](2026-03-02-cortex-phase-g-implementation.md) |
+| **H** | [Phase H: Human-Readable Bridge](2026-03-02-cortex-phase-h-implementation.md) |
+| **I** | [Phase I: Memory Intelligence](2026-03-02-cortex-phase-i-implementation.md) |
+| **J** | [Phase J: Advanced Memory Science](2026-03-02-cortex-phase-j-implementation.md) |
+| **K** | [Phase K: Ecosystem & Platform](2026-03-02-cortex-phase-k-implementation.md) |
+
 ---
 
 ## Table of Contents

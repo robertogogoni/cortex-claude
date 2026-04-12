@@ -28,6 +28,7 @@ const { VectorIndex } = require('./vector-index.cjs');
 const { MemoryStore } = require('./memory-store.cjs');
 const { HybridSearch } = require('./hybrid-search.cjs');
 const { VectorSearchProvider, getVectorSearchProvider } = require('./vector-search-provider.cjs');
+const { ObsidianVaultExporter } = require('./obsidian-vault.cjs');
 
 // LADS components
 const {
@@ -418,6 +419,7 @@ module.exports = {
   HybridSearch,
   VectorSearchProvider,
   getVectorSearchProvider,
+  ObsidianVaultExporter,
 
   // Types and utilities
   ...types,

@@ -139,6 +139,32 @@ class JSONLAdapter extends BaseAdapter {
   }
 
   /**
+   * Extract all available memories from all JSONL sources
+   * @param {import('./base-adapter.cjs').QueryOptions} [options]
+   * @returns {Promise<import('./base-adapter.cjs').MemoryRecord[]>}
+   */
+  async harvest(options = {}) {
+    return this._executeQuery(async () => {
+      const allRecords = [];
+
+      for (const source of this.sources) {
+        try {
+          const store = this._getStore(source.path);
+          const fullPath = path.join(this.basePath, source.path);
+          await this._ensureStoreLoaded(store, fullPath);
+          
+          const records = store.getAll().map(r => this.normalize(r, source));
+          allRecords.push(...records);
+        } catch (error) {
+          console.error(`[JSONLAdapter] Failed to harvest ${source.name}:`, error.message);
+        }
+      }
+
+      return allRecords;
+    });
+  }
+
+  /**
    * Query all JSONL sources for relevant memories
    * @param {import('./base-adapter.cjs').AnalysisContext} context
    * @param {import('./base-adapter.cjs').QueryOptions} [options]

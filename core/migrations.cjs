@@ -324,6 +324,26 @@ const MIGRATIONS = [
       `);
     },
   },
+
+  {
+    version: 10,
+    name: 'add_cue_anchors',
+    description: 'Add cue_anchors table for entity/concept/temporal/causal cross-memory linking',
+    up: `
+      CREATE TABLE IF NOT EXISTS cue_anchors (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        exchange_id TEXT    NOT NULL,
+        anchor_text TEXT    NOT NULL,
+        anchor_type TEXT    NOT NULL,
+        created_at  INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+      );
+      CREATE INDEX IF NOT EXISTS idx_cue_anchor_text  ON cue_anchors(anchor_text);
+      CREATE INDEX IF NOT EXISTS idx_cue_anchor_type  ON cue_anchors(anchor_type);
+      CREATE INDEX IF NOT EXISTS idx_cue_exchange     ON cue_anchors(exchange_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_cue_dedup ON cue_anchors(exchange_id, anchor_text, anchor_type);
+    `,
+    down: `DROP TABLE IF EXISTS cue_anchors;`,
+  },
 ];
 
 // =============================================================================

@@ -49,6 +49,7 @@ async function main() {
     validateInferArgs,
     validateLearnArgs,
     validateConsolidateArgs,
+    validateForgetArgs,
     ValidationError,
   } = require('../core/validation.cjs');
 
@@ -87,6 +88,7 @@ async function main() {
     'cortex__infer': { model: 'Sonnet', estimatedMs: 2000 },
     'cortex__learn': { model: 'Sonnet', estimatedMs: 2000 },
     'cortex__consolidate': { model: 'Sonnet', estimatedMs: 5000 },
+    'cortex__forget': { model: 'Local', estimatedMs: 100 },
     'cortex__health': { model: 'Local', estimatedMs: 50 },
   };
 
@@ -261,6 +263,23 @@ async function main() {
       }
     },
 
+    {
+      name: 'cortex__forget',
+      description: 'Delete specific memories by ID or keyword. Purges from storage and vector index to correct bad habits or remove sensitive data.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Exact ID of the memory to delete'
+          },
+          keyword: {
+            type: 'string',
+            description: 'Keyword to search for deletion (will prompt for confirmation if multiple match)'
+          }
+        }
+      }
+    },
     // System tools
     {
       name: 'cortex__health',
@@ -917,7 +936,38 @@ This provides a comprehensive project briefing.`
           case 'cortex__consolidate':
             validatedArgs = validateConsolidateArgs(args);
             break;
-          case 'cortex__health':
+        case 'cortex__forget': {
+          const { getVectorSearchProvider } = require('../core/vector-search-provider.cjs');
+          const vsp = getVectorSearchProvider({ basePath: BASE_PATH });
+          await vsp.initialize();
+
+          if (validatedArgs.id) {
+            const success = await vsp.delete(validatedArgs.id, true);
+            result = success
+              ? `✅ Successfully deleted memory: ${validatedArgs.id}`
+              : `❌ Memory not found: ${validatedArgs.id}`;
+          } else if (validatedArgs.keyword) {
+            // Find memory first
+            const searchResults = await vsp.search(validatedArgs.keyword, { limit: 5 });
+            if (!searchResults.results || searchResults.results.length === 0) {
+              result = `❌ No memories found matching keyword: "${validatedArgs.keyword}"`;
+            } else if (searchResults.results.length === 1) {
+              const memId = searchResults.results[0].id;
+              await vsp.delete(memId, true);
+              result = `✅ Successfully found and deleted memory: ${memId}\nSnippet: "${searchResults.results[0].content?.slice(0, 50)}..."`;
+            } else {
+              result = `⚠️ Multiple memories found for "${validatedArgs.keyword}". Please specify the ID to delete:\n`;
+              searchResults.results.forEach((r, i) => {
+                result += `\n[${i+1}] ID: ${r.id}\nSnippet: "${r.content?.slice(0, 80)}..."\n`;
+              });
+            }
+          } else {
+            throw new CortexError('CORTEX_E200', { details: 'Must provide either id or keyword to forget.' });
+          }
+          break;
+        }
+
+        case 'cortex__health':
             // Health check has minimal validation
             validatedArgs = { includeStats: args?.includeStats !== false };
             break;

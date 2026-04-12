@@ -29,6 +29,7 @@ the Cortex MCP tools as user-friendly commands with visual feedback.
 | `/cortex infer <concepts>` | Find connections between ideas | ~$0.01 |
 | `/cortex learn <insight>` | Store a new learning | ~$0.01 |
 | `/cortex consolidate` | Clean up and organize memories | ~$0.02 |
+| `/cortex forget <id|keyword>` | Selectively delete a memory | Free |
 | `/cortex stats` | Show memory counts and API costs | Free |
 | `/cortex health` | Verify all systems are working | Free |
 | `/cortex log` | View recent activity log | Free |
@@ -79,6 +80,7 @@ Display comprehensive help with groupings:
 │    /cortex consolidate  Clean up                │
 │                                                 │
 │  UTILITIES                                      │
+│    /cortex forget "X"   Delete specific memory  │
 │    /cortex log          Recent activity         │
 │    /cortex config       View/edit settings      │
 │    /cortex export       Export memories         │

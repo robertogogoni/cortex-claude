@@ -588,14 +588,32 @@ class MemoryStore {
   }
 
   /**
-   * Check if a memory exists
+   * Upsert a memory (update if exists, otherwise insert)
    *
+   * @param {Object} memory - Memory object
+   * @returns {Promise<{id: string, action: 'inserted' | 'updated', embedded: boolean}>}
+   */
+  async upsert(memory) {
+    this._ensureOpen();
+    const id = memory.id || this._generateId();
+    const exists = this.exists(id);
+
+    if (exists) {
+      const result = this.update(id, memory);
+      return { id, action: 'updated', embedded: !!memory.embedding };
+    } else {
+      const result = await this.insert({ ...memory, id });
+      return { id, action: 'inserted', embedded: result.embedded };
+    }
+  }
+
+  /**
+   * Check if a memory exists by ID
    * @param {string} id - Memory ID
    * @returns {boolean}
    */
   exists(id) {
     this._ensureOpen();
-
     const sql = `SELECT 1 FROM ${TABLE_NAME} WHERE id = @id`;
     return this.store.queryOne(sql, { id }) !== null;
   }

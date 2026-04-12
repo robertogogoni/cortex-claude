@@ -836,17 +836,18 @@ async function runFactoryTests() {
 
   // Test: Creates registry with all adapters
   total++;
-  if (test('Creates registry with all 7 adapters', () => {
+  if (test('Creates registry with all 8 adapters', () => {
     const registry = createDefaultRegistry({
       basePath: TEST_DIR,
       verbose: false,
     });
     const all = registry.getAll();
-    assert.strictEqual(all.length, 7);
+    assert.strictEqual(all.length, 8);
     assert.ok(registry.get('jsonl'));
     assert.ok(registry.get('episodic-memory'));
     assert.ok(registry.get('knowledge-graph'));
     assert.ok(registry.get('claudemd'));
+    assert.ok(registry.get('markdown-tree'));
     assert.ok(registry.get('gemini'));
     assert.ok(registry.get('warp-sqlite'));
     assert.ok(registry.get('vector'));

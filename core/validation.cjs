@@ -468,21 +468,29 @@ class ValidationError extends Error {
 // EXPORTS
 // =============================================================================
 
-module.exports = {
-  // Generic validators
-  validateString,
-  validateArray,
-  validateNumber,
-  validateEnum,
-  validateBoolean,
+function validateForgetArgs(args = {}) {
+  return {
+    id: validateString(args.id, {
+      fieldName: 'id',
+      maxLength: MAX_LENGTHS.id || 100,
+      required: false,
+    }),
+    keyword: validateString(args.keyword, {
+      fieldName: 'keyword',
+      maxLength: MAX_LENGTHS.query || 500,
+      required: false,
+    }),
+  };
+}
 
-  // Tool-specific validators
+module.exports = {
   validateQueryArgs,
   validateRecallArgs,
   validateReflectArgs,
   validateInferArgs,
   validateLearnArgs,
   validateConsolidateArgs,
+  validateForgetArgs,
 
   // Constants
   MAX_LENGTHS,

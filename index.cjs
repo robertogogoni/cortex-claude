@@ -78,6 +78,7 @@ module.exports = {
   HybridSearch: core.HybridSearch,
   VectorSearchProvider: core.VectorSearchProvider,
   getVectorSearchProvider: core.getVectorSearchProvider,
+  ObsidianVaultExporter: core.ObsidianVaultExporter,
 
   // Types and utilities
   generateId: core.generateId,
@@ -115,6 +116,7 @@ module.exports = {
   EpisodicMemoryAdapter: adapters.EpisodicMemoryAdapter,
   KnowledgeGraphAdapter: adapters.KnowledgeGraphAdapter,
   ClaudeMdAdapter: adapters.ClaudeMdAdapter,
+  MarkdownTreeAdapter: adapters.MarkdownTreeAdapter,
   VectorSearchAdapter: adapters.VectorSearchAdapter,
 
   // ============= NAMESPACES =============

@@ -1,0 +1,9 @@
+{
+  "id": "cortex-plugin",
+  "name": "Cortex Memory",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Integration with the Cortex Claude memory system.",
+  "author": "Antigravity",
+  "isDesktopOnly": true
+}

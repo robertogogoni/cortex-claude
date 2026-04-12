@@ -415,6 +415,21 @@ class EpisodicMemoryAdapter extends BaseAdapter {
   // ---------------------------------------------------------------------------
 
   /**
+   * Extract all available memories from episodic memory database
+   * @param {import('./base-adapter.cjs').QueryOptions} [options]
+   * @returns {Promise<import('./base-adapter.cjs').MemoryRecord[]>}
+   */
+  async harvest(options = {}) {
+    return this._executeQuery(async () => {
+      this._ensureDb();
+      const rows = this._db.prepare('SELECT * FROM exchanges').all();
+      return rows
+        .map(r => this.normalize(r))
+        .filter(r => r !== null);
+    });
+  }
+
+  /**
    * Check if episodic memory database is available
    * @returns {Promise<boolean>}
    */

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Skill",
+      "LSP",
+      "NotebookEdit",
+      "mcp__beeper__search_chats",
+      "mcp__claude-in-chrome__*"
+    ]
+  },
+  "instructions": "## NO PLACEHOLDERS OR STUBS ALLOWED\n1. NEVER write placeholder code, stubs, or mock implementations (e.g., `// TODO: Implement this`, `// Simulate API call`, or hardcoded responses).\n2. If a feature requires an external dependency (like a compiler, ffmpeg, or whisper.cpp), install it, configure it, and write the actual execution logic.\n3. Every script, hook, and CLI must contain 100% production-ready, fully functional code that achieves the exact stated goal.\n4. If a task is too large to complete in one step, write the complete implementation for the first half, but never leave a function body empty or faked."
+}

@@ -167,12 +167,13 @@ class BaseAdapter {
   }
 
   /**
-   * Check if this adapter's source is available
+   * Extract all available memories from this source
    * @abstract
-   * @returns {Promise<boolean>} True if source is available
+   * @param {QueryOptions} [options] - Harvest options (e.g. since timestamp)
+   * @returns {Promise<MemoryRecord[]>} Array of all normalized records
    */
-  async isAvailable() {
-    throw new Error('isAvailable() must be implemented by subclass');
+  async harvest(options = {}) {
+    throw new Error('harvest() must be implemented by subclass');
   }
 
   /**

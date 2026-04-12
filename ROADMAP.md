@@ -187,14 +187,14 @@ Detailed plan in: `docs/plans/2026-02-01-cortex-adapter-expansion.md`
 
 ### Phase 8: Operational Tooling
 
-| Feature | Priority | Effort | Description |
-|---------|----------|--------|-------------|
-| HTTP API Bridge | Medium | ~200 LOC | REST access for debugging/dashboards |
-| Backup/Restore | Medium | ~100 LOC | Data safety for production |
-| Streaming Responses | Medium | ~50 LOC | Better UX for large responses |
-| /cortex forget | Medium | ~50 LOC | Memory deletion with confirmation |
-| CLI Interface | Low | ~150 LOC | Standalone cortex CLI |
-| Metrics/Telemetry | Low | ~100 LOC | Usage analytics |
+| Feature | Priority | Effort | Description | Status |
+|---------|----------|--------|-------------|--------|
+| HTTP API Bridge | Medium | ~200 LOC | REST access for debugging/dashboards | Done |
+| Backup/Restore | Medium | ~100 LOC | Data safety for production | Done |
+| Streaming Responses | Medium | ~50 LOC | Better UX for large responses | Pending |
+| /cortex forget | Medium | ~50 LOC | Memory deletion with confirmation | Done |
+| CLI Interface | Low | ~150 LOC | Standalone cortex CLI | Done |
+| Metrics/Telemetry | Low | ~100 LOC | Usage analytics | Pending |
 
 ---
 
@@ -202,20 +202,20 @@ Detailed plan in: `docs/plans/2026-02-01-cortex-adapter-expansion.md`
 
 ### Phase 9: Advanced Features
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Web Dashboard | Low | Visual memory management |
-| Document Ingestion | Low | PDF/MD/JSON parsing |
-| External Embedding APIs | Low | Ollama/vLLM integration |
-| Knowledge Graph Visualization | Low | D3.js graph view |
+| Feature | Priority | Notes | Status |
+|---------|----------|-------|--------|
+| Web Dashboard | Low | Visual memory management | Pending |
+| Document Ingestion | Low | PDF/MD/JSON parsing | Done |
+| External Embedding APIs | Low | Ollama/vLLM integration | Pending |
+| Knowledge Graph Visualization | Low | D3.js & Obsidian graph view | Done |
 
 ### Phase 10: Enterprise Features
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| OAuth 2.0 Support | Low | Out of scope for local deployment |
-| Multi-user Support | Low | Requires auth layer |
-| Cloud Sync | Low | Cross-machine memory sync |
+| Feature | Priority | Notes | Status |
+|---------|----------|-------|--------|
+| OAuth 2.0 Support | Low | Out of scope for local deployment | Pending |
+| Multi-user Support | Low | Requires auth layer | Pending |
+| Cloud Sync | Low | Cross-machine memory sync | Done |
 
 ---
 

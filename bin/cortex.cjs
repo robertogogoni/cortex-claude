@@ -724,6 +724,91 @@ ${c('Examples:', 'bold')}
 }
 
 // =============================================================================
+// EXPORT VAULT COMMAND
+// =============================================================================
+
+async function exportVaultCommand(options) {
+  printHeader('Export Obsidian Vault', icons.folder);
+
+  const spinner = createSpinner('Collecting memories from adapters');
+  spinner.start();
+
+  try {
+    const { createDefaultRegistry } = require(path.join(CORTEX_DIR, 'adapters', 'index.cjs'));
+    const { ObsidianVaultExporter } = require(path.join(CORTEX_DIR, 'core', 'obsidian-vault.cjs'));
+
+    const registry = createDefaultRegistry({
+      basePath: options.basePath || '~/.claude/memory',
+      verbose: options.verbose,
+      adapters: {
+        markdownTree: {
+          enabled: Array.isArray(options.markdownDir) && options.markdownDir.length > 0,
+          roots: (options.markdownDir || []).map(dir => ({
+            name: path.basename(dir),
+            path: dir,
+          })),
+        },
+      },
+    });
+
+    const context = {
+      projectHash: null,
+      projectName: null,
+      projectType: null,
+      intent: null,
+      intentConfidence: 0,
+      tags: [],
+      domains: [],
+      gitBranch: null,
+    };
+
+    const result = await registry.queryAll(context, {
+      limit: options.limit,
+    });
+
+    let records = result.results;
+    if (options.source) {
+      records = records.filter(record => record._source === options.source);
+    }
+
+    spinner.stop(`${records.length} memories collected`);
+
+    const exporter = new ObsidianVaultExporter({
+      vaultPath: options.vaultPath,
+      clean: options.clean,
+      rootFolder: options.rootFolder,
+      maxBodyChars: options.maxBodyChars,
+    });
+
+    const exportResult = exporter.export(records);
+
+    console.log();
+    printSection('Vault Export', icons.folder);
+    printStatus('Export root', c(exportResult.exportRoot, 'cyan'));
+    printStatus('Record count', c(String(exportResult.manifest.counts.records), 'cyan'));
+    printStatus('Source count', c(String(Object.keys(exportResult.manifest.counts.bySource).length), 'cyan'));
+    printStatus('Tag count', c(String(Object.keys(exportResult.manifest.counts.byTag).length), 'cyan'));
+
+    if (Array.isArray(options.markdownDir) && options.markdownDir.length > 0) {
+      console.log();
+      printSection('Markdown Roots Included', icons.info);
+      for (const dir of options.markdownDir) {
+        console.log(`   ${c(icons.check, 'green')} ${dir}`);
+      }
+    }
+
+    console.log();
+  } catch (error) {
+    spinner.fail('failed');
+    console.error(`\n${c(icons.cross, 'red')} Error: ${c(error.message, 'red')}`);
+    if (options.verbose) {
+      console.error(error.stack);
+    }
+    process.exit(1);
+  }
+}
+
+// =============================================================================
 // MAIN CLI SETUP
 // =============================================================================
 
@@ -763,6 +848,20 @@ program
   .option('-f, --format <format>', 'Output format (table, json, plain)', 'table')
   .option('-v, --verbose', 'Show detailed information')
   .action(searchCommand);
+
+program
+  .command('export-vault')
+  .description('Export consolidated memories into an Obsidian-compatible vault subtree')
+  .option('-p, --vault-path <path>', 'Vault path', '~/.claude/memory/obsidian-vault')
+  .option('-m, --markdown-dir <paths...>', 'Additional markdown roots to ingest during export')
+  .option('-s, --source <source>', 'Filter exported records by source adapter')
+  .option('-l, --limit <number>', 'Maximum records to export', parseInt)
+  .option('-b, --base-path <path>', 'Cortex base path', '~/.claude/memory')
+  .option('-r, --root-folder <name>', 'Generated root folder inside vault', 'Cortex Atlas')
+  .option('--max-body-chars <number>', 'Maximum body characters per note', parseInt, 20000)
+  .option('-c, --clean', 'Delete the generated root folder before export')
+  .option('-v, --verbose', 'Show detailed information')
+  .action(exportVaultCommand);
 
 program
   .command('setup-key [key]')
