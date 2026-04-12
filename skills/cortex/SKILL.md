@@ -243,7 +243,7 @@ Show current configuration:
 │    Quality threshold:      0.4                  │
 │    Max extractions:        10                   │
 │                                                 │
-│  LADS (Learning)                                │
+│  Neural Consolidation                              │
 │    Evolution enabled:      yes                  │
 │    Evolution interval:     24h                  │
 │                                                 │

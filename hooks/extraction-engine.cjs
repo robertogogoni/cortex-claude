@@ -18,7 +18,7 @@ class ExtractionEngine {
     
     const apiKey = process.env.ANTHROPIC_API_KEY || options.apiKey;
     if (!apiKey) {
-      console.warn("[ExtractionEngine] WARNING: ANTHROPIC_API_KEY is not set. Inference for Memory Palace will fail.");
+      console.warn("[ExtractionEngine] WARNING: ANTHROPIC_API_KEY is not set. Inference for Cortex Morphology will fail.");
     }
     this.anthropic = new Anthropic({ apiKey });
   }

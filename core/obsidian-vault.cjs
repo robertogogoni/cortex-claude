@@ -82,7 +82,7 @@ class ObsidianVaultExporter {
       '---',
       'cssclasses: ["dashboard", "cortex-anatomy"]',
       '---',
-      '# <span style="background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🧠 Cortex Memory Palace</span>', 
+      '# <span style="background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🧠 Cortex Morphology</span>', 
       '',
       '<div style="text-align: center; border-bottom: 2px solid #3a7bd5; padding-bottom: 10px; margin-bottom: 20px;">',
       '  <em>The central nervous system of your digital intelligence.</em>',

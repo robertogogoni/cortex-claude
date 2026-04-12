@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Cortex Memory Interactive TUI
- * Terminal User Interface for exploring and maintaining the Memory Palace
+ * Terminal User Interface for exploring and maintaining the Cortex Morphology
  */
 
 'use strict';
@@ -15,7 +15,7 @@ const INGEST_CLI = path.join(__dirname, 'cortex-ingest.cjs');
 
 console.clear();
 console.log('\x1b[36m============================================================\x1b[0m');
-console.log('\x1b[1m\x1b[36m  🧠  CORTEX MEMORY PALACE - TERMINAL UI \x1b[0m');
+console.log('\x1b[1m\x1b[36m  🧠  CORTEX MORPHOLOGY - TERMINAL UI \x1b[0m');
 console.log('\x1b[36m============================================================\x1b[0m\n');
 
 async function main() {
@@ -27,7 +27,7 @@ async function main() {
       choices: [
         { name: '📊 View Memory Status', value: 'status', description: 'Monitor storage size and system sanity' },
         { name: '🔍 Search Memories', value: 'search', description: 'Search across the memory topological graph' },
-        { name: '📥 Ingest New Data', value: 'ingest', description: 'Feed text, markdown, or audio files into the memory palace' },
+        { name: '📥 Ingest New Data', value: 'ingest', description: 'Feed text, markdown, or audio files into the cortex lobes' },
         { name: '🚀 Promote Memory Tiers', value: 'promote', description: 'Run tier-promotions (Working -> Short Term -> Long Term)' },
         { name: '🧬 Consolidate Graph', value: 'consolidate', description: 'Merge duplicate records and synthesize patterns' },
         { name: 'export', name: '💾 Export Obsidian Vault', value: 'export', description: 'Generate human-readable visual vault' },
@@ -76,7 +76,7 @@ async function main() {
       await input({ message: 'Press Enter to return to main menu...' });
       console.clear();
       console.log('\x1b[36m============================================================\x1b[0m');
-      console.log('\x1b[1m\x1b[36m  🧠  CORTEX MEMORY PALACE - TERMINAL UI \x1b[0m');
+      console.log('\x1b[1m\x1b[36m  🧠  CORTEX MORPHOLOGY - TERMINAL UI \x1b[0m');
       console.log('\x1b[36m============================================================\x1b[0m\n');
     }
   }
